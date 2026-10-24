@@ -1,0 +1,117 @@
+name: Compilar Kerygma Reader (Multiplataforma)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # Permite disparar manualmente com um clique no GitHub
+
+jobs:
+  # -------------------------------------------------------------
+  # 1. COMPILAÇÃO PARA LINUX (Ubuntu, Debian, Fedora, Arch, etc.)
+  # -------------------------------------------------------------
+  build-linux:
+    name: Compilar para Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar Código
+        uses: actions/checkout@v4
+
+      - name: Instalar Dependências do Sistema Linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Obter Pacotes
+        run: flutter pub get
+
+      - name: Compilar Binário Nativo Linux
+        run: flutter build linux --release
+
+      - name: Compactar Executável Linux
+        run: |
+          cd build/linux/x64/release/bundle
+          tar -czvf ../../../../kerygma-reader-linux-x64.tar.gz *
+
+      - name: Disponibilizar para Download
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kerygma-Reader-Linux-x64
+          path: kerygma-reader-linux-x64.tar.gz
+
+  # -------------------------------------------------------------
+  # 2. COMPILAÇÃO PARA WINDOWS (Executável .exe nativo)
+  # -------------------------------------------------------------
+  build-windows:
+    name: Compilar para Windows
+    runs-on: windows-latest
+    steps:
+      - name: Baixar Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Obter Pacotes
+        run: flutter pub get
+
+      - name: Compilar Executável Windows (.exe)
+        run: flutter build windows --release
+
+      - name: Compactar Pacote Windows
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath kerygma-reader-windows-x64.zip
+
+      - name: Disponibilizar para Download
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kerygma-Reader-Windows-x64
+          path: kerygma-reader-windows-x64.zip
+
+  # -------------------------------------------------------------
+  # 3. COMPILAÇÃO PARA ANDROID (Instalador .apk para celular/tablet)
+  # -------------------------------------------------------------
+  build-android:
+    name: Compilar para Android (APK)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Obter Pacotes
+        run: flutter pub get
+
+      - name: Compilar APK Android
+        run: flutter build apk --release
+
+      - name: Disponibilizar para Download
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kerygma-Reader-Android-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
