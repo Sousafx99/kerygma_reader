@@ -1,15 +1,62 @@
-name: Compilar Kerygma Reader (Multiplataforma)
+name: Compilar e Publicar Kerygma Reader (Web + Linux + Windows + Android)
 
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch: # Permite disparar manualmente com um clique no GitHub
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: false
 
 jobs:
   # -------------------------------------------------------------
-  # 1. COMPILAÇÃO PARA LINUX (Ubuntu, Debian, Fedora, Arch, etc.)
+  # 1. PUBLICAR WEB APP ONLINE NO GITHUB PAGES (Acessível de Qualquer Lugar!)
+  # -------------------------------------------------------------
+  deploy-web:
+    name: Publicar Web App (GitHub Pages)
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Baixar Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Obter Pacotes
+        run: flutter pub get
+
+      - name: Compilar Web App (PWA)
+        run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
+
+      - name: Configurar Pages
+        uses: actions/configure-pages@v4
+
+      - name: Enviar Artefatos do Site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # -------------------------------------------------------------
+  # 2. COMPILAÇÃO PARA LINUX (Ubuntu, Debian, Fedora, Arch, etc.)
   # -------------------------------------------------------------
   build-linux:
     name: Compilar para Linux
@@ -48,7 +95,7 @@ jobs:
           path: kerygma-reader-linux-x64.tar.gz
 
   # -------------------------------------------------------------
-  # 2. COMPILAÇÃO PARA WINDOWS (Executável .exe nativo)
+  # 3. COMPILAÇÃO PARA WINDOWS (Executável .exe nativo)
   # -------------------------------------------------------------
   build-windows:
     name: Compilar para Windows
@@ -82,7 +129,7 @@ jobs:
           path: kerygma-reader-windows-x64.zip
 
   # -------------------------------------------------------------
-  # 3. COMPILAÇÃO PARA ANDROID (Instalador .apk para celular/tablet)
+  # 4. COMPILAÇÃO PARA ANDROID (Instalador .apk para celular/tablet)
   # -------------------------------------------------------------
   build-android:
     name: Compilar para Android (APK)
