@@ -10,6 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Kerygma">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -313,7 +314,7 @@
             </button>
           </div>
 
-          <textarea id="raw-sermon-input" rows="10" class="w-full p-4 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 border border-black/15 dark:border-zinc-700 font-sans-reading text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#52453a] resize-none shadow-inner"></textarea>
+          <textarea id="raw-sermon-input" rows="10" placeholder="Cole aqui o texto do sermão (Ctrl+V) ou arraste um arquivo Word (.docx), TXT ou Markdown aqui para dentro..." class="w-full p-4 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 border border-black/15 dark:border-zinc-700 font-sans-reading text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#52453a] resize-none shadow-inner"></textarea>
         </div>
 
         <div class="flex items-center justify-between pt-2">
@@ -321,10 +322,15 @@
             <span>✨</span>
             <span>Detecção inteligente de títulos, citações e versículos</span>
           </div>
-          <button onclick="processAndAnalyzeText()" class="px-5 py-2.5 rounded-xl bg-[#52453a] text-white hover:bg-[#3f352c] font-medium text-xs flex items-center gap-2 shadow-sm transition">
-            <span>Analisar e Organizar Estrutura</span>
-            <span>→</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="quickImportDirectly()" class="px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs flex items-center gap-1.5 shadow-sm transition" title="Importa o texto imediatamente para leitura sem passar pela tela de revisão">
+              <span>⚡ Importação Direta</span>
+            </button>
+            <button onclick="processAndAnalyzeText()" class="px-5 py-2.5 rounded-xl bg-[#52453a] text-white hover:bg-[#3f352c] font-medium text-xs flex items-center gap-2 shadow-sm transition">
+              <span>Revisar Estrutura</span>
+              <span>→</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1210,45 +1216,88 @@
       let newSubtitle = '';
       let cleanBlocks = [];
 
-      tempParsedBlocks.forEach(b => {
+      tempParsedBlocks.forEach((b) => {
         if (b.type === 'title') {
-          newTitle = b.text;
+          if (newTitle === 'Sermão') newTitle = b.text;
+          else cleanBlocks.push({ type: 'heading', text: b.text, verses: b.verses || [], note: '' });
         } else if (b.type === 'subtitle') {
-          newSubtitle = b.text;
+          if (!newSubtitle) newSubtitle = b.text;
+          else cleanBlocks.push({ type: 'heading', text: b.text, verses: b.verses || [], note: '' });
         } else if (b.type === 'heading') {
-          cleanBlocks.push({ type: 'heading', text: b.text });
-        } else if (b.type === 'quote' || b.type === 'paragraph') {
-          b.verses.forEach(v => {
+          cleanBlocks.push({ type: 'heading', text: b.text, verses: b.verses || [], note: '' });
+        } else {
+          // Preencher versículo se faltar no banco
+          (b.verses || []).forEach(v => {
             if (!bibleData[v]) {
               bibleData[v] = {
                 title: v,
-                ARA: `Texto de ${v} carregado do banco local.`,
-                NAA: `Texto de ${v} carregado do banco local.`,
-                NVT: `Texto de ${v} carregado do banco local.`,
-                NVI: `Texto de ${v} carregado do banco local.`,
-                ARC: `Texto de ${v} carregado do banco local.`
+                ARA: `Texto de ${v} carregado do sermão importado.`,
+                NAA: `Texto de ${v} carregado do sermão importado.`,
+                NVT: `Texto de ${v} carregado do sermão importado.`,
+                NVI: `Texto de ${v} carregado do sermão importado.`,
+                ARC: `Texto de ${v} carregado do sermão importado.`
               };
             }
           });
 
           cleanBlocks.push({
-            type: b.type,
+            type: b.type || 'paragraph',
             text: b.text,
-            verses: b.verses,
-            note: ''
+            verses: b.verses || [],
+            note: b.note || ''
           });
         }
       });
 
+      if (cleanBlocks.length === 0) {
+        cleanBlocks = [{ type: 'paragraph', text: 'Nenhum parágrafo importado.', verses: [], note: '' }];
+      }
+
       currentSermon = {
         title: newTitle,
         subtitle: newSubtitle,
-        series: 'Sermão Importado',
+        series: currentSermon.series || 'Sermão Importado',
         blocks: cleanBlocks
       };
 
+      persistSermon();
+      currentParagraphIndex = 0;
+      activeVerseKey = null;
       closeImportModal();
       renderSermon();
+      selectParagraph(0, true);
+    }
+
+    function quickImportDirectly() {
+      const text = document.getElementById('raw-sermon-input').value.trim();
+      if (!text) {
+        alert('Cole ou carregue um texto primeiro para importar.');
+        return;
+      }
+      processRawLinesIntoBlocks(text);
+      confirmAndOpenInReader();
+    }
+
+    function processRawLinesIntoBlocks(text) {
+      const rawLines = text.split(/\n+/).map(l => l.trim()).filter(l => l.length > 0);
+      tempParsedBlocks = [];
+
+      rawLines.forEach((line, index) => {
+        const matches = line.match(bibleRegex) || [];
+        const verses = Array.from(new Set(matches.map(m => m.trim())));
+
+        if (index === 0 && line.length < 80 && !line.match(/^[0-9I|V|X]+\./)) {
+          tempParsedBlocks.push({ id: index, type: 'title', text: line, verses: verses });
+        } else if (index === 1 && line.length < 60 && !line.includes(':')) {
+          tempParsedBlocks.push({ id: index, type: 'subtitle', text: line, verses: verses });
+        } else if (line.endsWith(':') || line.match(/^[I|V|X]+\./) || line.match(/^[0-9]+\./) || (line.length < 40 && line === line.toUpperCase() && line.length > 3)) {
+          tempParsedBlocks.push({ id: index, type: 'heading', text: line, verses: verses });
+        } else if (line.startsWith('"') || line.startsWith('“') || line.startsWith('«')) {
+          tempParsedBlocks.push({ id: index, type: 'quote', text: line, verses: verses });
+        } else {
+          tempParsedBlocks.push({ id: index, type: 'paragraph', text: line, verses: verses, note: '' });
+        }
+      });
     }
 
     function openImportModal() {
@@ -1278,19 +1327,44 @@
       badgeName.innerText = `Arquivo carregado: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
 
       if (file.name.endsWith('.json')) {
-        const text = await file.text();
         try {
+          const text = await file.text();
           currentSermon = JSON.parse(text);
+          persistSermon();
+          currentParagraphIndex = 0;
+          activeVerseKey = null;
           closeImportModal();
           renderSermon();
+          selectParagraph(0, true);
           return;
-        } catch(e) {}
+        } catch(e) {
+          alert('Erro ao carregar arquivo JSON: ' + e.message);
+          return;
+        }
       }
 
-      if (file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+      if (file.name.endsWith('.docx')) {
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          if (window.mammoth) {
+            const result = await window.mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+            textarea.value = result.value.trim();
+          } else {
+            alert('Biblioteca Word carregando. Tente novamente em 2 segundos ou cole o texto diretamente.');
+          }
+          return;
+        } catch(e) {
+          alert('Erro ao ler arquivo Word (.docx): ' + e.message);
+          return;
+        }
+      }
+
+      try {
         textarea.value = await file.text();
-      } else {
-        loadUserSermonSample();
+      } catch(e) {
+        const reader = new FileReader();
+        reader.onload = (ev) => { textarea.value = ev.target.result; };
+        reader.readAsText(file);
       }
     }
 
@@ -1301,7 +1375,11 @@
 
     function loadUserSermonSample() {
       currentSermon = defaultFullSermon;
+      persistSermon();
+      currentParagraphIndex = 0;
+      activeVerseKey = null;
       renderSermon();
+      selectParagraph(0, true);
       closeImportModal();
     }
 
@@ -1314,26 +1392,7 @@
         return;
       }
 
-      const rawLines = text.split(/\n+/).map(l => l.trim()).filter(l => l.length > 0);
-      tempParsedBlocks = [];
-
-      rawLines.forEach((line, index) => {
-        const matches = line.match(bibleRegex) || [];
-        const verses = Array.from(new Set(matches.map(m => m.trim())));
-
-        if (index === 0 && line.length < 80 && !line.match(/^[0-9I|V|X]+\./)) {
-          tempParsedBlocks.push({ id: index, type: 'title', text: line, verses: verses });
-        } else if (index === 1 && line.length < 60 && !line.includes(':')) {
-          tempParsedBlocks.push({ id: index, type: 'subtitle', text: line, verses: verses });
-        } else if (line.endsWith(':') || line.match(/^[I|V|X]+\./) || line.match(/^[0-9]+\./) || (line.length < 40 && line === line.toUpperCase() && line.length > 3)) {
-          tempParsedBlocks.push({ id: index, type: 'heading', text: line, verses: verses });
-        } else if (line.startsWith('"') || line.startsWith('“')) {
-          tempParsedBlocks.push({ id: index, type: 'quote', text: line, verses: verses });
-        } else {
-          tempParsedBlocks.push({ id: index, type: 'paragraph', text: line, verses: verses, note: '' });
-        }
-      });
-
+      processRawLinesIntoBlocks(text);
       renderReviewScreen();
       document.getElementById('step-paste').classList.add('hidden');
       document.getElementById('step-review').classList.remove('hidden');
