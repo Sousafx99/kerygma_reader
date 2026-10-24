@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kerygma Focus - Leitor de Sermões Bíblicos</title>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#2C2825">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kerygma">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Inter:wght@300;400;500;600;700;800&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;0,7..72,600;0,7..72,700;0,7..72,800;1,7..72,400&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;0,6..72,800;1,6..72,400&display=swap" rel="stylesheet">
+  <style>
+    * {
+      transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-serif-reading { font-family: 'Newsreader', 'Literata', Georgia, serif; }
+    .font-sans-reading { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .font-classic-heading { font-family: 'Cinzel', serif; }
+    
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(140, 140, 140, 0.25); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(140, 140, 140, 0.45); }
+
+    .sermon-paragraph {
+      position: relative;
+      cursor: pointer;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin: -6px -16px 14px -16px;
+      scroll-margin-top: 110px;
+    }
+    .dimmed-text {
+      opacity: 0.25 !important;
+      filter: blur(0.2px);
+    }
+    .active-paragraph {
+      opacity: 1 !important;
+      background: var(--active-bg, rgba(0, 0, 0, 0.04));
+      box-shadow: 0 0 0 1px var(--active-border, rgba(0,0,0,0.06));
+    }
+    .quote-block {
+      border-left: 3px solid #52453a;
+      padding-left: 14px;
+      font-style: italic;
+      opacity: 0.95;
+    }
+
+    #inspector-desktop {
+      transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s ease;
+      will-change: transform, opacity;
+    }
+  </style>
+</head>
+<body id="app-body" class="bg-[#fbf9f5] text-[#2c2b29] antialiased min-h-screen selection:bg-[#dfd7cc]">
+
+  <!-- Top Bar -->
+  <header class="border-b border-black/10 dark:border-zinc-800 sticky top-0 z-40 backdrop-blur-md bg-inherit/90 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+    <div class="flex items-center gap-2.5">
+      <div class="w-7 h-7 rounded-full bg-[#52453a] text-[#fbf9f5] flex items-center justify-center font-bold font-serif text-sm">
+        ✝
+      </div>
+      <div>
+        <span class="font-semibold text-sm tracking-tight block">Kerygma Reader Web</span>
+        <span class="text-[11px] opacity-60">Leitura Focada • 100% Offline (PWA)</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button onclick="downloadSermonJson()" class="px-3 py-1.5 rounded-full border border-black/15 dark:border-zinc-700 bg-white/60 dark:bg-zinc-800 hover:bg-black/5 dark:hover:bg-zinc-700 font-medium flex items-center gap-1.5 shadow-xs transition" title="Baixar arquivo do sermão completo (.json)">
+        <span>💾</span>
+        <span>Salvar .json</span>
+      </button>
+
+      <button onclick="openFullEditorModal()" class="px-3 py-1.5 rounded-full border border-black/15 dark:border-zinc-700 bg-white/60 dark:bg-zinc-800 hover:bg-black/5 dark:hover:bg-zinc-700 font-medium flex items-center gap-1.5 shadow-xs transition">
+        <span>✏️</span>
+        <span>Editar Texto</span>
+      </button>
+
+      <button onclick="openImportModal()" class="px-3.5 py-1.5 rounded-full bg-[#52453a] text-white hover:bg-[#3f352c] font-medium flex items-center gap-1.5 shadow-sm transition">
+        <span>+ Importar</span>
+      </button>
+    </div>
+
+    <!-- Controles Rápidos -->
+    <div class="flex items-center gap-2">
+      <div class="flex items-center bg-black/5 dark:bg-white/10 rounded-full p-0.5">
+        <button onclick="setTheme('light')" id="theme-light-btn" title="Papel Natural (Claro)" class="w-7 h-7 rounded-full bg-[#fbf9f5] border border-black/15 shadow-sm"></button>
+        <button onclick="setTheme('sepia')" id="theme-sepia-btn" title="Sépia Orgânico" class="w-7 h-7 rounded-full bg-[#f2ebd9] border border-black/15 ml-1"></button>
+        <button onclick="setTheme('dark')" id="theme-dark-btn" title="Carvão Noturno" class="w-7 h-7 rounded-full bg-[#1e1e1e] border border-white/20 ml-1"></button>
+        <button onclick="setTheme('oled')" id="theme-oled-btn" title="Preto Absoluto OLED" class="w-7 h-7 rounded-full bg-[#0a0a0a] border border-white/20 ml-1"></button>
+      </div>
+
+      <button onclick="toggleTypographyPanel()" class="px-3 py-1.5 rounded-full border border-black/15 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1 font-medium">
+        <span>Aa</span>
+      </button>
+
+      <button onclick="toggleFocusMode()" id="focus-toggle-btn" class="px-3 py-1.5 rounded-full bg-[#52453a] text-white flex items-center gap-1.5 text-xs font-medium">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span>Modo Foco</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- PAINEL TIPOGRAFIA -->
+  <div id="typography-panel" class="hidden fixed top-14 right-6 z-50 w-72 p-4 rounded-2xl shadow-xl border border-black/10 dark:border-zinc-700 bg-[#fbf9f5] dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 backdrop-blur-xl">
+    <div class="flex justify-between items-center mb-3">
+      <span class="font-medium text-xs tracking-wider uppercase opacity-60">Tipografia & Espaçamento</span>
+      <button onclick="toggleTypographyPanel()" class="text-xs opacity-50 hover:opacity-100">✕</button>
+    </div>
+
+    <div class="mb-3">
+      <label class="text-[11px] opacity-70 block mb-1">Família da Fonte</label>
+      <div class="grid grid-cols-2 gap-1.5 text-xs">
+        <button onclick="setFontFamily('serif')" class="p-2 rounded-xl border border-black/10 dark:border-zinc-700 text-center font-serif-reading font-medium hover:border-black/40">Serif (Literata)</button>
+        <button onclick="setFontFamily('sans')" class="p-2 rounded-xl border border-black/10 dark:border-zinc-700 text-center font-sans-reading font-medium hover:border-black/40">Sans (Inter)</button>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="text-[11px] opacity-70 block mb-1">Espessura / Peso da Fonte</label>
+      <div class="grid grid-cols-3 gap-1 text-[11px]">
+        <button onclick="setFontWeight('400')" id="fw-400" class="p-1.5 rounded-lg border border-black/10 dark:border-zinc-700 hover:bg-black/5 dark:hover:bg-zinc-800">Normal</button>
+        <button onclick="setFontWeight('500')" id="fw-500" class="p-1.5 rounded-lg border border-black/10 dark:border-zinc-700 hover:bg-black/5 dark:hover:bg-zinc-800 font-medium">Média</button>
+        <button onclick="setFontWeight('700')" id="fw-700" class="p-1.5 rounded-lg border border-black/10 dark:border-zinc-700 hover:bg-black/5 dark:hover:bg-zinc-800 font-bold bg-[#52453a]/15">Pesada</button>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <div class="flex justify-between text-[11px] opacity-70 mb-1">
+        <span>Tamanho do Texto</span>
+        <span id="font-size-label">19px</span>
+      </div>
+      <input type="range" min="14" max="28" value="19" step="1" oninput="setFontSize(this.value)" class="w-full accent-[#52453a]">
+    </div>
+
+    <div class="mb-1">
+      <div class="flex justify-between text-[11px] opacity-70 mb-1">
+        <span>Espaçamento de Linha</span>
+        <span id="line-height-label">1.75x</span>
+      </div>
+      <input type="range" min="1.4" max="2.3" value="1.75" step="0.05" oninput="setLineHeight(this.value)" class="w-full accent-[#52453a]">
+    </div>
+  </div>
+
+  <!-- MODAL DO LÁPIS -->
+  <div id="paragraph-editor-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-xl bg-[#fbf9f5] dark:bg-zinc-900 border border-black/15 dark:border-zinc-700 rounded-3xl p-6 shadow-2xl text-zinc-900 dark:text-zinc-100 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4 pb-2 border-b border-black/10 dark:border-zinc-800">
+        <h3 class="font-bold text-base tracking-tight flex items-center gap-2">
+          <span>✎</span>
+          <span id="p-modal-title">Editar Parágrafo</span>
+        </h3>
+        <button onclick="closeParagraphEditorModal()" class="w-7 h-7 rounded-full bg-black/5 dark:bg-zinc-800 text-xs opacity-70 hover:opacity-100">✕</button>
+      </div>
+
+      <div class="mb-4">
+        <label class="text-xs font-semibold block mb-1 opacity-80">Texto do Parágrafo:</label>
+        <textarea id="p-edit-text" rows="4" class="w-full p-3 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-black/15 dark:border-zinc-700 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#52453a]"></textarea>
+      </div>
+
+      <div class="mb-4 p-3.5 rounded-2xl bg-black/[0.02] dark:bg-zinc-800/50 border border-black/10 dark:border-zinc-700">
+        <label class="text-xs font-semibold block mb-1 opacity-80">📖 Versículos Bíblicos (Super-Links):</label>
+        <div id="p-edit-verses-chips" class="flex flex-wrap gap-1.5 mb-2.5"></div>
+        <div class="flex gap-2">
+          <input type="text" id="p-new-verse-input" placeholder="Ex: Provérbios 24:27 ou 1 Coríntios 10:31" class="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-black/15 dark:border-zinc-700 text-xs focus:outline-none focus:ring-1 focus:ring-[#52453a]">
+          <button onclick="addVerseToCurrentEditing()" class="px-3 py-1.5 rounded-xl bg-[#52453a] text-white text-xs font-medium hover:bg-[#3f352c]">
+            + Adicionar
+          </button>
+        </div>
+      </div>
+
+      <div class="mb-5">
+        <label class="text-xs font-semibold block mb-1 opacity-80">✎ Anotação Pastoral / Lembrete de Oratória:</label>
+        <textarea id="p-edit-note" rows="3" placeholder="Adicione instruções, ilustrações ou alertas pastorais..." class="w-full p-3 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-black/15 dark:border-zinc-700 text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#52453a]"></textarea>
+      </div>
+
+      <div class="flex justify-between items-center pt-2 border-t border-black/10 dark:border-zinc-800">
+        <button onclick="deleteCurrentParagraph()" class="text-xs text-red-600 dark:text-red-400 hover:underline">
+          Excluir este parágrafo
+        </button>
+        <div class="flex gap-2">
+          <button onclick="closeParagraphEditorModal()" class="px-4 py-2 rounded-xl border border-black/15 dark:border-zinc-700 text-xs font-medium hover:bg-black/5 dark:hover:bg-zinc-800">
+            Cancelar
+          </button>
+          <button onclick="saveParagraphEditorChanges()" class="px-5 py-2 rounded-xl bg-[#52453a] text-white text-xs font-medium hover:bg-[#3f352c] shadow-sm">
+            Salvar Alterações
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE EDIÇÃO COMPLETA -->
+  <div id="full-editor-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl bg-[#fbf9f5] dark:bg-[#18181b] text-zinc-900 dark:text-zinc-100 border border-black/15 dark:border-zinc-700 rounded-3xl p-6 shadow-2xl max-h-[92vh] flex flex-col">
+      <div class="flex justify-between items-center pb-4 border-b border-black/10 dark:border-zinc-800 mb-4">
+        <div>
+          <h2 class="font-bold text-lg tracking-tight">Editar Texto do Sermão</h2>
+          <p class="text-xs text-zinc-500 dark:text-zinc-400">Modifique o título, subtítulo ou parágrafos diretamente.</p>
+        </div>
+        <button onclick="closeFullEditorModal()" class="w-8 h-8 rounded-full bg-black/5 dark:bg-zinc-800 flex items-center justify-center text-xs opacity-70 hover:opacity-100">✕</button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-semibold block mb-1">Título do Sermão:</label>
+            <input type="text" id="full-edit-title" class="w-full p-2.5 rounded-xl bg-white dark:bg-zinc-800 border border-black/15 dark:border-zinc-700 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-xs font-semibold block mb-1">Subtítulo / Série:</label>
+            <input type="text" id="full-edit-subtitle" class="w-full p-2.5 rounded-xl bg-white dark:bg-zinc-800 border border-black/15 dark:border-zinc-700 text-sm font-medium">
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold block mb-1">Conteúdo Completo:</label>
+          <textarea id="full-edit-raw-text" rows="14" class="w-full p-4 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-black/15 dark:border-zinc-700 font-sans-reading text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#52453a]"></textarea>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-black/10 dark:border-zinc-800 flex justify-between items-center">
+        <button onclick="closeFullEditorModal()" class="px-4 py-2 rounded-xl border border-black/15 dark:border-zinc-700 text-xs font-medium hover:bg-black/5">
+          Cancelar
+        </button>
+        <button onclick="saveFullEditorChanges()" class="px-6 py-2.5 rounded-xl bg-[#52453a] text-white hover:bg-[#3f352c] font-medium text-xs shadow-md">
+          Salvar e Atualizar Leitor ✓
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE IMPORTAÇÃO -->
+  <div id="import-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl bg-[#fbf9f5] dark:bg-[#18181b] text-[#2c2b29] dark:text-[#f4f4f5] border border-black/15 dark:border-zinc-700 rounded-3xl p-6 shadow-2xl max-h-[92vh] flex flex-col">
+      <div class="flex items-center justify-between pb-4 border-b border-black/10 dark:border-zinc-700 mb-4">
+        <div>
+          <h2 class="font-bold text-lg tracking-tight text-[#2c2b29] dark:text-[#fafafa]" id="modal-step-title">
+            1. Importar ou Colar Sermão
+          </h2>
+          <p class="text-xs text-zinc-600 dark:text-zinc-400">
+            Abra um arquivo do seu computador ou cole o texto do Word/Docs.
+          </p>
+        </div>
+        <button onclick="closeImportModal()" class="w-8 h-8 rounded-full bg-black/5 dark:bg-zinc-800 flex items-center justify-center text-xs opacity-70 hover:opacity-100">✕</button>
+      </div>
+
+      <div id="step-paste" class="flex-1 overflow-y-auto space-y-4 pr-1">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input type="file" id="native-file-input" accept=".docx,.txt,.md,.pdf,.json" class="hidden" onchange="handleFileSelected(event)">
+
+          <button onclick="triggerFileInput()" class="p-4 rounded-2xl border-2 border-dashed border-[#52453a]/30 dark:border-zinc-600 hover:border-[#52453a] dark:hover:border-zinc-400 bg-white/70 dark:bg-zinc-800/80 flex items-center gap-3 text-left transition group">
+            <div class="w-10 h-10 rounded-xl bg-[#52453a]/10 dark:bg-zinc-700 flex items-center justify-center text-lg group-hover:scale-105 transition">
+              📁
+            </div>
+            <div>
+              <span class="font-semibold text-xs text-[#2c2b29] dark:text-zinc-100 block">Escolher Arquivo do Dispositivo</span>
+              <span class="text-[11px] text-zinc-500 dark:text-zinc-400">Word (.docx), PDF, TXT ou JSON</span>
+            </div>
+          </button>
+
+          <button onclick="loadUserSermonSample()" class="p-4 rounded-2xl border border-black/10 dark:border-zinc-700 hover:border-black/30 dark:hover:border-zinc-500 bg-white/70 dark:bg-zinc-800/80 flex items-center gap-3 text-left transition group">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center text-lg group-hover:scale-105 transition">
+              🏠
+            </div>
+            <div>
+              <span class="font-semibold text-xs text-[#2c2b29] dark:text-zinc-100 block">Restaurar Sermão Completo</span>
+              <span class="text-[11px] text-zinc-500 dark:text-zinc-400">"O lar como um reflexo da glória de Deus"</span>
+            </div>
+          </button>
+        </div>
+
+        <div id="file-loaded-badge" class="hidden p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span>✓</span>
+            <span id="file-loaded-name" class="font-medium">arquivo</span>
+          </div>
+          <span class="text-[11px] opacity-75">Texto extraído</span>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              Ou cole o texto diretamente aqui (Ctrl+V):
+            </label>
+            <button onclick="clearTextarea()" class="text-[11px] text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
+              Limpar caixa
+            </button>
+          </div>
+
+          <textarea id="raw-sermon-input" rows="10" class="w-full p-4 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 border border-black/15 dark:border-zinc-700 font-sans-reading text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#52453a] resize-none shadow-inner"></textarea>
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <div class="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+            <span>✨</span>
+            <span>Detecção inteligente de títulos, citações e versículos</span>
+          </div>
+          <button onclick="processAndAnalyzeText()" class="px-5 py-2.5 rounded-xl bg-[#52453a] text-white hover:bg-[#3f352c] font-medium text-xs flex items-center gap-2 shadow-sm transition">
+            <span>Analisar e Organizar Estrutura</span>
+            <span>→</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="step-review" class="hidden flex-1 overflow-y-auto space-y-4 pr-1">
+        <div class="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-black/10 dark:border-zinc-700 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-1.5 cursor-pointer font-medium">
+              <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this.checked)" class="rounded accent-[#52453a]">
+              <span>Selecionar Todos</span>
+            </label>
+            <span class="text-zinc-400">|</span>
+            <span id="selected-count-label" class="opacity-75">0 selecionados</span>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button onclick="mergeSelectedBlocks('quote')" id="btn-merge-quote" class="px-3 py-1.5 rounded-xl bg-[#52453a]/10 hover:bg-[#52453a]/20 dark:bg-zinc-700 font-medium text-xs flex items-center gap-1 transition opacity-50 cursor-not-allowed" disabled>
+              <span>💬 Mesclar em Citação</span>
+            </button>
+            <button onclick="deleteSelectedBlocks()" id="btn-delete-selected" class="px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:text-red-300 font-medium text-xs transition opacity-50 cursor-not-allowed" disabled>
+              <span>🗑️ Excluir</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="review-blocks-container" class="space-y-3"></div>
+
+        <div class="pt-4 border-t border-black/10 dark:border-zinc-700 flex items-center justify-between sticky bottom-0 bg-inherit py-2">
+          <button onclick="backToPaste()" class="px-4 py-2 rounded-xl border border-black/15 dark:border-zinc-700 text-xs font-medium hover:bg-black/5 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+            ← Voltar para Edição
+          </button>
+          <button onclick="confirmAndOpenInReader()" class="px-6 py-2.5 rounded-xl bg-[#52453a] text-white hover:bg-[#3f352c] font-medium text-xs shadow-md flex items-center gap-2 transition">
+            <span>Aprovar e Abrir no Modo Leitura</span>
+            <span>✓</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTAINER DO LEITOR -->
+  <main class="max-w-7xl mx-auto p-4 md:p-6 transition-all duration-300">
+    <div id="viewport-frame" class="mx-auto transition-all duration-300 w-full min-h-[85vh] rounded-3xl border border-black/10 dark:border-zinc-800 p-4 md:p-8 relative shadow-sm">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative" id="layout-grid">
+        
+        <!-- COLUNA PRINCIPAL -->
+        <div id="sermon-column" class="lg:col-span-8 max-w-2xl mx-auto w-full relative">
+          <div class="mb-8 pb-6 border-b border-black/10 dark:border-zinc-800">
+            <div class="flex items-center gap-2 text-xs opacity-60 mb-2">
+              <span id="sermon-meta-series">Série: Família Cristã</span>
+              <span>•</span>
+              <span id="sermon-meta-date">Atualizado hoje</span>
+              <span>•</span>
+              <span class="bg-black/5 dark:bg-white/10 px-2 py-0.5 rounded-full" id="sermon-meta-time">Tempo est.: 8 min</span>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-medium tracking-tight mb-2 text-[#2c2b29] dark:text-[#f4f4f5]" id="sermon-title-display">
+              O lar como um reflexo da glória de Deus
+            </h1>
+            <p class="text-sm opacity-70 italic font-serif-reading" id="sermon-subtitle-display">
+              Sementes que perduram
+            </p>
+          </div>
+
+          <div id="sermon-content" class="font-serif-reading text-[19px] leading-[1.75] font-normal space-y-6"></div>
+
+          <div class="mt-12 pt-6 border-t border-black/10 dark:border-zinc-800 flex items-center justify-between text-xs opacity-60">
+            <span>Fim do sermão</span>
+            <span>Navegação: [↑ / ↓] mantém o parágrafo focado no topo</span>
+          </div>
+        </div>
+
+        <!-- COLUNA LATERAL DINÂMICA -->
+        <div class="hidden lg:block lg:col-span-4 relative h-full" id="inspector-column-wrapper">
+          <aside id="inspector-desktop" class="w-full space-y-4">
+            
+            <!-- CARD BÍBLICO -->
+            <div id="bible-card-wrapper" class="rounded-2xl border border-black/10 dark:border-zinc-800 bg-white/90 dark:bg-zinc-800/90 p-5 shadow-sm backdrop-blur-sm">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-bold uppercase tracking-wider text-[#52453a] dark:text-amber-300" id="verse-ref-title">Provérbios 24:27</span>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 opacity-75">Texto Bíblico</span>
+                </div>
+                <span class="text-[11px] opacity-50">Offline Local</span>
+              </div>
+
+              <!-- Seletor de Múltipla Escolha -->
+              <div class="mb-3.5 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <label class="text-[11px] font-medium opacity-70">Comparar Traduções:</label>
+                  <span class="text-[10px] opacity-60">Selecione para comparar</span>
+                </div>
+
+                <div class="p-2 rounded-xl bg-black/[0.03] dark:bg-zinc-900 border border-black/10 dark:border-zinc-700 flex flex-wrap gap-2 text-xs">
+                  <label class="flex items-center gap-1 cursor-pointer px-2 py-0.5 rounded hover:bg-black/5 dark:hover:bg-zinc-700">
+                    <input type="checkbox" value="ARA" checked onchange="toggleTranslation(this.value, this.checked)" class="rounded accent-[#52453a]">
+                    <span class="font-medium">ARA</span>
+                  </label>
+                  <label class="flex items-center gap-1 cursor-pointer px-2 py-0.5 rounded hover:bg-black/5 dark:hover:bg-zinc-700">
+                    <input type="checkbox" value="NAA" onchange="toggleTranslation(this.value, this.checked)" class="rounded accent-[#52453a]">
+                    <span class="font-medium">NAA</span>
+                  </label>
+                  <label class="flex items-center gap-1 cursor-pointer px-2 py-0.5 rounded hover:bg-black/5 dark:hover:bg-zinc-700">
+                    <input type="checkbox" value="NVT" onchange="toggleTranslation(this.value, this.checked)" class="rounded accent-[#52453a]">
+                    <span class="font-medium">NVT</span>
+                  </label>
+                  <label class="flex items-center gap-1 cursor-pointer px-2 py-0.5 rounded hover:bg-black/5 dark:hover:bg-zinc-700">
+                    <input type="checkbox" value="NVI" onchange="toggleTranslation(this.value, this.checked)" class="rounded accent-[#52453a]">
+                    <span class="font-medium">NVI</span>
+                  </label>
+                  <label class="flex items-center gap-1 cursor-pointer px-2 py-0.5 rounded hover:bg-black/5 dark:hover:bg-zinc-700">
+                    <input type="checkbox" value="ARC" onchange="toggleTranslation(this.value, this.checked)" class="rounded accent-[#52453a]">
+                    <span class="font-medium">ARC</span>
+                  </label>
+                </div>
+              </div>
+
+              <div id="verse-container" class="space-y-2"></div>
+              
+              <div class="mt-3 text-[11px] opacity-60 flex justify-between items-center pt-2 border-t border-black/5 dark:border-zinc-800">
+                <span id="trans-summary-label">ARA</span>
+                <button onclick="copyCurrentVerses()" class="hover:underline flex items-center gap-1">
+                  <span>Copiar versículo</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- CARD DE ANOTAÇÕES -->
+            <div id="note-card-wrapper" class="rounded-2xl border border-black/10 dark:border-zinc-800 bg-white/90 dark:bg-zinc-800/90 p-5 shadow-sm backdrop-blur-sm">
+              <div class="flex items-center justify-between mb-2.5">
+                <span class="text-xs font-bold uppercase tracking-wider opacity-70">Anotação Pastoral</span>
+                <button onclick="openParagraphEditorForCurrent()" class="text-xs px-2 py-0.5 rounded-md bg-[#52453a]/10 hover:bg-[#52453a]/20 dark:bg-zinc-700 text-[#52453a] dark:text-amber-200 font-medium">
+                  ✎ Editar
+                </button>
+              </div>
+              <div id="inspector-note-content" class="text-xs leading-relaxed opacity-85 space-y-2"></div>
+            </div>
+
+          </aside>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- BOTTOM SHEET MOBILE -->
+  <div id="mobile-sheet" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end">
+    <div class="w-full bg-[#fbf9f5] dark:bg-zinc-900 border-t border-black/15 dark:border-zinc-700 rounded-t-3xl p-5 shadow-2xl max-h-[80vh] overflow-y-auto">
+      <div class="w-12 h-1.5 rounded-full bg-black/20 dark:bg-white/20 mx-auto mb-4"></div>
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold text-sm tracking-tight text-zinc-900 dark:text-zinc-100" id="mobile-sheet-title">Versículo</h3>
+        <button onclick="closeMobileSheet()" class="p-1 rounded-full text-sm opacity-60 hover:opacity-100">✕ Fechar</button>
+      </div>
+      <div id="mobile-sheet-content" class="space-y-3 mb-4"></div>
+      <p class="text-[11px] opacity-60 text-center">Toque fora ou no X para voltar ao sermão</p>
+    </div>
+  </div>
+
+  <script>
+    // BANCO BÍBLICO LOCAL
+    const bibleData = {
+      'Provérbios 24:27': {
+        title: 'Provérbios 24:27',
+        ARA: 'Cuida dos teus negócios lá fora, apronta a lavoura no campo e, depois, edifica a tua casa.',
+        NAA: 'Cuide dos seus negócios lá fora, prepare o seu trabalho no campo e, depois, edifique a sua casa.',
+        NVT: 'Desenvolva seus negócios no campo antes de construir a sua casa.',
+        NVI: 'Termine primeiro o seu trabalho a céu aberto; deixe pronta a sua lavoura. Depois construa a sua casa.',
+        ARC: 'Prepara de fora a tua obra, e aparelha-a no campo, e depois edifica a tua casa.'
+      },
+      'Pv 24:27': {
+        title: 'Provérbios 24:27',
+        ARA: 'Cuida dos teus negócios lá fora, apronta a lavoura no campo e, depois, edifica a tua casa.',
+        NAA: 'Cuide dos seus negócios lá fora, prepare o seu trabalho no campo e, depois, edifique a sua casa.',
+        NVT: 'Desenvolva seus negócios no campo antes de construir a sua casa.',
+        NVI: 'Termine primeiro o seu trabalho a céu aberto; deixe pronta a sua lavoura. Depois construa a sua casa.',
+        ARC: 'Prepara de fora a tua obra, e aparelha-a no campo, e depois edifica a tua casa.'
+      },
+      '1 Coríntios 10:31': {
+        title: '1 Coríntios 10:31',
+        ARA: 'Portanto, quer comais, quer bebais ou façais outra coisa qualquer, fazei tudo para a glória de Deus.',
+        NAA: 'Portanto, quer vocês comam, quer bebam ou façam qualquer outra coisa, façam tudo para a glória de Deus.',
+        NVT: 'Portanto, quer vocês comam, bebam ou façam qualquer outra coisa, façam tudo para a glória de Deus.',
+        NVI: 'Assim, quer vocês comam, bebam ou façam qualquer outra coisa, façam tudo para a glória de Deus.',
+        ARC: 'Portanto, quer comais, quer bebais ou façais outra qualquer coisa, fazei tudo para a glória de Deus.'
+      },
+      'Efésios 6:1-4': {
+        title: 'Efésios 6:1-4',
+        ARA: 'Filhos, obedecei a vossos pais no Senhor, pois isto é justo. Honra a teu pai e a tua mãe (que é o primeiro mandamento com promessa), para que te vá bem, e sejas de longa vida sobre a terra. E vós, pais, não provoqueis vossos filhos à ira, mas criai-os na disciplina e na admoestação do Senhor.',
+        NAA: 'Filhos, obedeçam a seus pais no Senhor, pois isso é justo. "Honre seu pai e sua mãe", que é o primeiro mandamento com promessa, "para que tudo lhe vá bem e você tenha uma longa vida sobre a terra." E vocês, pais, não provoquem os seus filhos à ira, mas criem-nos na disciplina e na admoestação do Senhor.',
+        NVT: 'Filhos, obedeçam a seus pais no Senhor, pois isso é o que é justo. "Honre seu pai e sua mãe." Este é o primeiro mandamento com promessa: "Para que tudo lhe vá bem e você tenha vida longa na terra." Pais, não irritem seus filhos. Pelo contrário, criem-nos com a disciplina e a instrução que vêm do Senhor.',
+        NVI: 'Filhos, obedeçam a seus pais no Senhor, pois isso é justo. "Honra teu pai e tua mãe" — este é o primeiro mandamento com promessa — "para que tudo te corra bem e tenhas longa vida sobre a terra". Pais, não irritem seus filhos; antes criem-nos segundo a instrução e o conselho do Senhor.',
+        ARC: 'Vós, filhos, sede obedientes a vossos pais no Senhor, porque isto é justo. Honra a teu pai e a tua mãe, que é o primeiro mandamento com promessa, para que te vá bem, e vivas muito tempo sobre a terra. E vós, pais, não provoqueis a ira a vossos filhos, mas criai-os na doutrina e admoestação do Senhor.'
+      },
+      'Efésios 5:21-33': {
+        title: 'Efésios 5:21-33',
+        ARA: 'Sujeitando-vos uns aos outros no temor de Cristo. As mulheres sejam submissas ao seu próprio marido, como ao Senhor... Maridos, amai vossa mulher, como também Cristo amou a igreja e a si mesmo se entregou por ela.',
+        NAA: 'Sujeitem-se uns aos outros no temor de Cristo. Esposas, que cada uma de vocês seja submissa ao seu próprio marido, como ao Senhor... Maridos, que cada um de vocês ame a sua esposa, assim como Cristo amou a igreja.',
+        NVT: 'Sujeitem-se uns aos outros por temor a Cristo. As esposas devem se sujeitar ao marido, como ao Senhor... E vocês, maridos, amem suas esposas, assim como Cristo amou a igreja.',
+        NVI: 'Sujeitem-se uns aos outros, por temor a Cristo. Mulheres, sujeite-se cada uma a seu marido, como ao Senhor... Maridos, ame cada um a sua mulher, assim como Cristo amou a igreja e entregou-se por ela.',
+        ARC: 'Sujeitando-vos uns aos outros no temor de Deus. Vós, mulheres, sujeitai-vos a vosso marido, como ao Senhor... Vós, maridos, amai vossa mulher, como também Cristo amou a igreja e a si mesmo se entregou por ela.'
+      },
+      'Gênesis 2:24': {
+        title: 'Gênesis 2:24',
+        ARA: 'Por isso, deixa o homem pai e mãe e se une à sua mulher, tornando-se os dois uma só carne.',
+        NAA: 'Por isso o homem deixa o seu pai e a sua mãe para se unir à sua mulher, tornando-se os dois uma só carne.',
+        NVT: 'Por essa razão, o homem deixa pai e mãe e se une à sua mulher, e eles se tornam uma só carne.',
+        NVI: 'Por essa razão, o homem deixará pai e mãe e se unirá à sua mulher, e eles se tornarão uma só carne.',
+        ARC: 'Portanto, deixará o varão o seu pai e a sua mãe e apegar-se-á à sua mulher, e serão ambos uma carne.'
+      },
+      'Salmos 127:1-3': {
+        title: 'Salmos 127:1-3',
+        ARA: 'Se o SENHOR não edificar a casa, em vão trabalham os que a edificam; se o SENHOR não guardar a cidade, em vão vigia a sentinela. Herança do SENHOR são os filhos; o fruto do ventre, seu galardão.',
+        NAA: 'Se o SENHOR não edificar a casa, em vão trabalham os que a constroem. Se o SENHOR não guardar a cidade, em vão vigia a sentinela.',
+        NVT: 'Se o SENHOR não construir a casa, o trabalho dos construtores será inútil. Se o SENHOR não proteger a cidade, de nada adiantará a sentinela ficar de guarda.',
+        NVI: 'Se o Senhor não edificar a casa, em vão trabalham os que a constroem. Se o Senhor não guardar a cidade, em vão vigia a sentinela.',
+        ARC: 'Se o Senhor não edificar a casa, em vão trabalham os que a edificam; se o Senhor não guardar a cidade, em vão vigia a sentinela.'
+      },
+      'Romanos 8:28': {
+        title: 'Romanos 8:28',
+        ARA: 'Sabemos que todas as coisas cooperam para o bem daqueles que amam a Deus, daqueles que são chamados segundo o seu propósito.',
+        NAA: 'Sabemos que todas as coisas cooperam para o bem daqueles que amam a Deus, daqueles que são chamados segundo o seu propósito.',
+        NVT: 'E sabemos que Deus faz todas as coisas cooperarem para o bem daqueles que o amam e que são chamados de acordo com seu propósito.',
+        NVI: 'Sabemos que Deus age em todas as coisas para o bem daqueles que o amam, dos que foram chamados de acordo com o seu propósito.',
+        ARC: 'E sabemos que todas as coisas contribuem juntamente para o bem daqueles que amam a Deus, daqueles que são chamados por seu decreto.'
+      }
+    };
+
+    let selectedTranslations = ['ARA'];
+
+    const defaultFullSermon = {
+      title: 'O lar como um reflexo da glória de Deus',
+      subtitle: 'Sementes que perduram',
+      series: 'Série: Família Cristã',
+      blocks: [
+        { type: 'heading', text: 'Abertura:' },
+        {
+          type: 'paragraph',
+          text: 'Agradeço primeiramente a Deus por ter me resgatado das profundezas do pecado. Agradeço ao nosso Senhor pela oportunidade de compartilhar suas bem-aventuranças, mostrar o seu amor e resplandecer a sua glória.',
+          verses: [],
+          note: ''
+        },
+        {
+          type: 'paragraph',
+          text: 'Em terceiro lugar, agradeço aos meus queridos amigos, que me convocaram para trazer o estudo de hoje. Que Deus esteja no contínuo controle e nos ajude nessa difícil mensagem.',
+          verses: [],
+          note: ''
+        },
+        { type: 'heading', text: 'Objetivo:' },
+        {
+          type: 'paragraph',
+          text: 'Hoje desejo reforçar a compreensão do propósito de Deus ao instituir a família e aprender atitudes práticas para transformar a dinâmica do lar em um testemunho vivo para a glória de Deus. Dando sequência aos nossos estudos que têm como base o texto de 1 Coríntios 10:31.',
+          verses: ['1 Coríntios 10:31'],
+          note: '«Nota de introdução: Conectar com o tema de glória de Deus no cotidiano do lar.»'
+        },
+        { type: 'heading', text: 'Tese:' },
+        {
+          type: 'paragraph',
+          text: 'O lar cristão não existe para si mesmo, mas como um palco visível da graça divina em meio a uma sociedade fragmentada.',
+          verses: [],
+          note: ''
+        },
+        { type: 'heading', text: '1. A Preparação Antes do Edifício:' },
+        {
+          type: 'paragraph',
+          text: 'Em Provérbios 24:27 diz: "Cuide dos seus negócios lá fora, apronte a sua lavoura no campo e, depois, edifique a sua casa." A maioria segue a lógica de quem pisa fundo no acelerador e aciona o nitro num carro que está sem freio, batendo biela e com o motor fundido. Mas Provérbios 24:27 é sobre preparar o carro antes de ir pra pista, revisar o motor antes de pisar no acelerador. Primeiro lavra e fertiliza a terra, amadurece, cria estabilidade e aprende a sustentar a sua própria vida diante de Deus; só depois você pensa em edificar uma casa! Tem muita gente sonhando em brincar de casinha sem sequer ter plantado uma semente na lavoura. A solteirice não é um showroom; é uma oficina para regular a mecânica, revisar a elétrica e dar um tapa na funilaria. A solteirice é tempo de cultivar sua maturidade espiritual, emocional e profissional antes de convidar alguém para dividir a vida com você.',
+          verses: ['Provérbios 24:27'],
+          note: '«Enfatizar: A maturidade deve preceder a aliança. Não queime etapas na juventude.»'
+        },
+        { type: 'heading', text: '2. A Terceirização da Responsabilidade:' },
+        {
+          type: 'paragraph',
+          text: 'Existe um processo que atualmente engloba praticamente toda a nossa sociedade, em todos os aspectos, em todas as classes sociais, e está muito difundido nas igrejas: a terceirização. Nós viramos a sociedade que terceiriza tudo: a alimentação para o iFood, o transporte para o Uber, o entretenimento para a Netflix, e o discipulado das crianças para o Ministério Infantil da igreja. A salinha do culto infantil nunca foi criada para substituir o altar da sua sala de estar.',
+          verses: [],
+          note: '«Alerta pastoral: O dever de discipular os filhos é dos pais, não da igreja.»'
+        },
+        { type: 'heading', text: '3. A Instrução Bíblica no Lar:' },
+        {
+          type: 'paragraph',
+          text: 'Efésios 6:1-4 nos ensina os fundamentos práticos do relacionamento entre pais e filhos segundo a instrução do Senhor.',
+          verses: ['Efésios 6:1-4'],
+          note: '«Enfatizar o mandamento com promessa aos filhos e a paciência dos pais.»'
+        },
+        {
+          type: 'quote',
+          text: '"Filhos, obedecei a vossos pais no Senhor, pois isto é justo. Honra a teu pai e a tua mãe... E vós, pais, não provoqueis vossos filhos à ira, mas criai-os na disciplina e na admoestação do Senhor."',
+          verses: ['Efésios 6:1-4'],
+          note: ''
+        },
+        {
+          type: 'paragraph',
+          text: 'O marido tampouco deve oprimir sua casa. Ele deve se dispor ao sacrifício e pagar o preço sempre que necessário, assim como Cristo se entregou pela Igreja.',
+          verses: ['Efésios 5:21-33'],
+          note: '«Liderança sacrificial em contraste com o autoritarismo mundano.»'
+        }
+      ]
+    };
+
+    let currentSermon = defaultFullSermon;
+    try {
+      const saved = localStorage.getItem('kerygma_saved_sermon');
+      if (saved) currentSermon = JSON.parse(saved);
+    } catch(e) {}
+
+    function persistSermon() {
+      try {
+        localStorage.setItem('kerygma_saved_sermon', JSON.stringify(currentSermon));
+      } catch(e) {}
+    }
+
+    let tempParsedBlocks = [];
+    let currentVerseKey = null;
+    let currentParagraphIndex = 0;
+    let focusModeActive = true;
+    let currentViewport = 'desktop';
+
+    const transNames = {
+      'ARA': 'Almeida Revista e Atualizada',
+      'NAA': 'Nova Almeida Atualizada',
+      'NVT': 'Nova Versão Transformadora',
+      'NVI': 'Nova Versão Internacional',
+      'ARC': 'Almeida Revista e Corrigida'
+    };
+
+    function renderSermon() {
+      document.getElementById('sermon-title-display').innerText = currentSermon.title;
+      document.getElementById('sermon-subtitle-display').innerText = currentSermon.subtitle || '';
+      document.getElementById('sermon-meta-series').innerText = currentSermon.series || 'Sermão';
+
+      const container = document.getElementById('sermon-content');
+      container.innerHTML = '';
+
+      let pIndex = 0;
+      currentSermon.blocks.forEach((block) => {
+        if (block.type === 'heading') {
+          const h = document.createElement('h2');
+          h.className = 'text-lg font-bold mt-6 mb-2 tracking-tight opacity-90 border-b border-black/10 dark:border-zinc-800 pb-1 text-[#2c2b29] dark:text-[#f4f4f5]';
+          h.innerText = block.text;
+          container.appendChild(h);
+        } else if (block.type === 'paragraph' || block.type === 'quote') {
+          const thisIndex = pIndex;
+          const p = document.createElement('div');
+          
+          let quoteClass = block.type === 'quote' ? 'quote-block bg-black/[0.02] dark:bg-white/[0.03] rounded-r-xl' : '';
+          p.className = `sermon-paragraph ${quoteClass} ${thisIndex === currentParagraphIndex ? 'active-paragraph' : (focusModeActive ? 'dimmed-text' : '')}`;
+          p.id = `p-${thisIndex}`;
+          p.onclick = () => selectParagraph(thisIndex, true);
+
+          let versesHtml = '';
+          if (block.verses && block.verses.length > 0) {
+            block.verses.forEach(v => {
+              versesHtml += `
+                <button onclick="openScripture(event, '${v}', ${thisIndex})" class="inline-flex items-center gap-1 px-2.5 py-0.5 ml-1 rounded-md bg-[#52453a]/10 hover:bg-[#52453a]/20 dark:bg-zinc-700 dark:hover:bg-zinc-600 font-sans-reading text-xs font-medium text-inherit transition border border-black/10 dark:border-zinc-600">
+                  <span>📖 ${v}</span>
+                </button>
+              `;
+            });
+          }
+
+          let hasContent = (block.verses && block.verses.length > 0) || (block.note && block.note.trim().length > 0);
+          let noteBadge = hasContent ? 'bg-amber-500/20 text-amber-900 dark:text-amber-200' : 'bg-black/5 dark:bg-white/10 opacity-50 hover:opacity-100';
+          let noteHtml = `
+            <button onclick="openParagraphEditorForIndex(event, ${thisIndex})" class="inline-flex items-center justify-center w-6 h-6 ml-1.5 rounded-full ${noteBadge} text-xs font-sans-reading font-bold hover:scale-110 transition shadow-xs" title="Editar texto, versículos e anotações deste parágrafo">
+              ✎
+            </button>
+          `;
+
+          let prefix = block.type === 'quote' ? '❝ ' : `§ ${thisIndex + 1} `;
+
+          p.innerHTML = `
+            <span class="text-xs font-mono opacity-40 select-none mr-1.5">${prefix}</span>
+            <span>${block.text}</span>
+            ${versesHtml}
+            ${noteHtml}
+          `;
+
+          container.appendChild(p);
+          pIndex++;
+        }
+      });
+
+      persistSermon();
+      selectParagraph(currentParagraphIndex < pIndex ? currentParagraphIndex : 0, false);
+    }
+
+    function selectParagraph(index, shouldScroll = true) {
+      const paragraphs = document.querySelectorAll('.sermon-paragraph');
+      if (index < 0 || index >= paragraphs.length) return;
+
+      currentParagraphIndex = index;
+      
+      paragraphs.forEach((p, idx) => {
+        if (idx === index) {
+          p.classList.add('active-paragraph');
+          p.classList.remove('dimmed-text');
+        } else {
+          p.classList.remove('active-paragraph');
+          if (focusModeActive) {
+            p.classList.add('dimmed-text');
+          } else {
+            p.classList.remove('dimmed-text');
+          }
+        }
+      });
+
+      const targetElement = document.getElementById(`p-${index}`);
+      if (shouldScroll && targetElement) {
+        const topOffset = targetElement.getBoundingClientRect().top + window.pageYOffset - 110;
+        window.scrollTo({ top: topOffset, behavior: 'smooth' });
+      }
+
+      let pCount = 0;
+      let activeBlock = null;
+      for (let b of currentSermon.blocks) {
+        if (b.type === 'paragraph' || b.type === 'quote') {
+          if (pCount === index) {
+            activeBlock = b;
+            break;
+          }
+          pCount++;
+        }
+      }
+
+      if (activeBlock) {
+        if (activeBlock.verses && activeBlock.verses.length > 0) {
+          currentVerseKey = activeBlock.verses[0];
+        } else {
+          currentVerseKey = null;
+        }
+        updateInspector(activeBlock);
+      }
+    }
+
+    function updateInspector(activeBlock) {
+      const inspector = document.getElementById('inspector-desktop');
+      const bibleCard = document.getElementById('bible-card-wrapper');
+      const noteCard = document.getElementById('note-card-wrapper');
+
+      const hasVerse = currentVerseKey !== null;
+      const hasNote = activeBlock && activeBlock.note && activeBlock.note.trim().length > 0;
+
+      if (!hasVerse && !hasNote) {
+        inspector.style.opacity = '0';
+        inspector.style.pointerEvents = 'none';
+        bibleCard.classList.add('hidden');
+        noteCard.classList.add('hidden');
+        return;
+      }
+
+      inspector.style.opacity = '1';
+      inspector.style.pointerEvents = 'auto';
+
+      if (hasVerse) {
+        bibleCard.classList.remove('hidden');
+        const verseObj = bibleData[currentVerseKey] || {
+          title: currentVerseKey,
+          ARA: `Texto de ${currentVerseKey} cadastrado para leitura offline.`,
+          NAA: `Texto de ${currentVerseKey} cadastrado para leitura offline.`,
+          NVT: `Texto de ${currentVerseKey} cadastrado para leitura offline.`,
+          NVI: `Texto de ${currentVerseKey} cadastrado para leitura offline.`,
+          ARC: `Texto de ${currentVerseKey} cadastrado para leitura offline.`
+        };
+
+        document.getElementById('verse-ref-title').innerText = verseObj.title || currentVerseKey;
+        document.getElementById('trans-summary-label').innerText = `${selectedTranslations.join(', ')} em comparação`;
+
+        let html = '';
+        selectedTranslations.forEach(tr => {
+          const text = verseObj[tr] || verseObj['ARA'] || 'Versículo.';
+          html += `
+            <div class="p-3.5 rounded-xl bg-black/[0.02] dark:bg-zinc-900 border border-black/5 dark:border-zinc-700 shadow-inner">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#52453a]/10 dark:bg-zinc-700 text-[#52453a] dark:text-amber-300">${tr}</span>
+                <span class="text-[10px] opacity-50">${transNames[tr]}</span>
+              </div>
+              <p class="font-serif-reading text-sm leading-relaxed text-zinc-900 dark:text-zinc-100">"${text}"</p>
+            </div>
+          `;
+        });
+        document.getElementById('verse-container').innerHTML = html;
+      } else {
+        bibleCard.classList.add('hidden');
+      }
+
+      if (hasNote) {
+        noteCard.classList.remove('hidden');
+        document.getElementById('inspector-note-content').innerHTML = `
+          <div class="italic text-amber-900/90 dark:text-amber-200/90 font-serif-reading">${activeBlock.note}</div>
+        `;
+      } else {
+        noteCard.classList.add('hidden');
+      }
+
+      alignInspectorWithActiveParagraph();
+    }
+
+    function alignInspectorWithActiveParagraph() {
+      const activeEl = document.getElementById(`p-${currentParagraphIndex}`);
+      const inspector = document.getElementById('inspector-desktop');
+      const sermonCol = document.getElementById('sermon-column');
+
+      if (!activeEl || !inspector || !sermonCol) return;
+      const pTop = activeEl.offsetTop;
+      inspector.style.transform = `translateY(${pTop}px)`;
+    }
+
+    function toggleTranslation(trans, checked) {
+      if (checked) {
+        if (!selectedTranslations.includes(trans)) selectedTranslations.push(trans);
+      } else {
+        selectedTranslations = selectedTranslations.filter(t => t !== trans);
+        if (selectedTranslations.length === 0) selectedTranslations = ['ARA'];
+      }
+      
+      let pCount = 0;
+      let activeBlock = null;
+      for (let b of currentSermon.blocks) {
+        if (b.type === 'paragraph' || b.type === 'quote') {
+          if (pCount === currentParagraphIndex) { activeBlock = b; break; }
+          pCount++;
+        }
+      }
+      updateInspector(activeBlock);
+    }
+
+    function openScripture(e, ref, pIndex) {
+      e.stopPropagation();
+      currentVerseKey = ref;
+      selectParagraph(pIndex, false);
+      let pCount = 0;
+      let activeBlock = null;
+      for (let b of currentSermon.blocks) {
+        if (b.type === 'paragraph' || b.type === 'quote') {
+          if (pCount === pIndex) { activeBlock = b; break; }
+          pCount++;
+        }
+      }
+      updateInspector(activeBlock);
+
+      if (window.innerWidth < 1024) {
+        const sheet = document.getElementById('mobile-sheet');
+        document.getElementById('mobile-sheet-title').innerText = ref;
+        const verseObj = bibleData[ref] || { ARA: ref };
+        let mobileHtml = '';
+        selectedTranslations.forEach(tr => {
+          mobileHtml += `
+            <div class="p-3 rounded-xl bg-white dark:bg-zinc-800 border border-black/10 dark:border-zinc-700">
+              <span class="text-[10px] font-bold text-[#52453a] dark:text-amber-300 block mb-1">${tr}</span>
+              <p class="font-serif-reading text-sm text-zinc-900 dark:text-zinc-100">"${verseObj[tr] || verseObj['ARA']}"</p>
+            </div>
+          `;
+        });
+        document.getElementById('mobile-sheet-content').innerHTML = mobileHtml;
+        sheet.classList.remove('hidden');
+      }
+    }
+
+    function downloadSermonJson() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentSermon, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "meu_sermao_completo.json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    let editingBlockIndex = 0;
+    let editingVersesList = [];
+
+    function openParagraphEditorForIndex(e, pIndex) {
+      if (e) e.stopPropagation();
+      editingBlockIndex = pIndex;
+      selectParagraph(pIndex, false);
+      showParagraphEditorModal();
+    }
+
+    function openParagraphEditorForCurrent() {
+      editingBlockIndex = currentParagraphIndex;
+      showParagraphEditorModal();
+    }
+
+    function showParagraphEditorModal() {
+      let pCount = 0;
+      let targetBlock = null;
+      for (let b of currentSermon.blocks) {
+        if (b.type === 'paragraph' || b.type === 'quote') {
+          if (pCount === editingBlockIndex) { targetBlock = b; break; }
+          pCount++;
+        }
+      }
+
+      document.getElementById('p-modal-title').innerText = `Editar Parágrafo § ${editingBlockIndex + 1}`;
+      document.getElementById('p-edit-text').value = targetBlock ? targetBlock.text : '';
+      document.getElementById('p-edit-note').value = targetBlock && targetBlock.note ? targetBlock.note.replace(/^«|»$/g, '') : '';
+      
+      editingVersesList = targetBlock && targetBlock.verses ? [...targetBlock.verses] : [];
+      renderEditingVersesChips();
+
+      document.getElementById('paragraph-editor-modal').classList.remove('hidden');
+      document.getElementById('p-edit-text').focus();
+    }
+
+    function renderEditingVersesChips() {
+      const container = document.getElementById('p-edit-verses-chips');
+      if (editingVersesList.length === 0) {
+        container.innerHTML = '<span class="text-xs opacity-50 italic">Nenhum versículo associado.</span>';
+        return;
+      }
+      container.innerHTML = editingVersesList.map((v, idx) => `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#52453a]/15 text-[#52453a] dark:text-amber-200 text-xs font-medium">
+          <span>📖 ${v}</span>
+          <button onclick="removeVerseFromEditing(${idx})" class="hover:text-red-600 font-bold ml-1">✕</button>
+        </span>
+      `).join('');
+    }
+
+    function addVerseToCurrentEditing() {
+      const input = document.getElementById('p-new-verse-input');
+      const val = input.value.trim();
+      if (!val) return;
+      if (!editingVersesList.includes(val)) {
+        editingVersesList.push(val);
+        if (!bibleData[val]) {
+          bibleData[val] = {
+            title: val,
+            ARA: `Texto de ${val} pronto para visualização offline.`,
+            NAA: `Texto de ${val} pronto para visualização offline.`,
+            NVT: `Texto de ${val} pronto para visualização offline.`,
+            NVI: `Texto de ${val} pronto para visualização offline.`,
+            ARC: `Texto de ${val} pronto para visualização offline.`
+          };
+        }
+        renderEditingVersesChips();
+      }
+      input.value = '';
+    }
+
+    function removeVerseFromEditing(idx) {
+      editingVersesList.splice(idx, 1);
+      renderEditingVersesChips();
+    }
+
+    function closeParagraphEditorModal() {
+      document.getElementById('paragraph-editor-modal').classList.add('hidden');
+    }
+
+    function saveParagraphEditorChanges() {
+      const newText = document.getElementById('p-edit-text').value.trim();
+      const newNote = document.getElementById('p-edit-note').value.trim();
+
+      let pCount = 0;
+      for (let b of currentSermon.blocks) {
+        if (b.type === 'paragraph' || b.type === 'quote') {
+          if (pCount === editingBlockIndex) {
+            b.text = newText;
+            b.verses = [...editingVersesList];
+            b.note = newNote ? `«${newNote}»` : '';
+            break;
+          }
+          pCount++;
+        }
+      }
+
+      closeParagraphEditorModal();
+      renderSermon();
+      selectParagraph(editingBlockIndex, false);
+    }
+
+    function deleteCurrentParagraph() {
+      if (!confirm('Deseja excluir este parágrafo?')) return;
+      let pCount = 0;
+      let removeIdx = -1;
+      for (let i = 0; i < currentSermon.blocks.length; i++) {
+        let b = currentSermon.blocks[i];
+        if (b.type === 'paragraph' || b.type === 'quote') {
+          if (pCount === editingBlockIndex) { removeIdx = i; break; }
+          pCount++;
+        }
+      }
+      if (removeIdx !== -1) {
+        currentSermon.blocks.splice(removeIdx, 1);
+      }
+      closeParagraphEditorModal();
+      renderSermon();
+      selectParagraph(Math.max(0, editingBlockIndex - 1), false);
+    }
+
+    function openFullEditorModal() {
+      document.getElementById('full-edit-title').value = currentSermon.title;
+      document.getElementById('full-edit-subtitle').value = currentSermon.subtitle || '';
+      
+      let lines = [];
+      currentSermon.blocks.forEach(b => {
+        if (b.type === 'heading') {
+          lines.push(`\n## ${b.text}\n`);
+        } else {
+          lines.push(b.text);
+        }
+      });
+      document.getElementById('full-edit-raw-text').value = lines.join('\n\n').trim();
+      document.getElementById('full-editor-modal').classList.remove('hidden');
+    }
+
+    function closeFullEditorModal() {
+      document.getElementById('full-editor-modal').classList.add('hidden');
+    }
+
+    function saveFullEditorChanges() {
+      currentSermon.title = document.getElementById('full-edit-title').value.trim() || 'Sermão';
+      currentSermon.subtitle = document.getElementById('full-edit-subtitle').value.trim();
+
+      const raw = document.getElementById('full-edit-raw-text').value.trim();
+      const chunks = raw.split(/\n+/).map(c => c.trim()).filter(c => c.length > 0);
+
+      let newBlocks = [];
+      chunks.forEach((chunk) => {
+        const matches = chunk.match(bibleRegex) || [];
+        const verses = Array.from(new Set(matches.map(m => m.trim())));
+
+        if (chunk.startsWith('## ') || chunk.endsWith(':') || chunk.match(/^[I|V|X]+\./)) {
+          newBlocks.push({
+            type: 'heading',
+            text: chunk.replace(/^##\s*/, '')
+          });
+        } else if (chunk.startsWith('"') || chunk.startsWith('“')) {
+          newBlocks.push({
+            type: 'quote',
+            text: chunk,
+            verses: verses,
+            note: ''
+          });
+        } else {
+          newBlocks.push({
+            type: 'paragraph',
+            text: chunk,
+            verses: verses,
+            note: ''
+          });
+        }
+      });
+
+      currentSermon.blocks = newBlocks;
+      closeFullEditorModal();
+      renderSermon();
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+      const totalParagraphs = document.querySelectorAll('.sermon-paragraph').length;
+
+      if (e.key === 'ArrowDown' || e.key === ' ' || e.key === 'j') {
+        e.preventDefault();
+        if (currentParagraphIndex < totalParagraphs - 1) {
+          selectParagraph(currentParagraphIndex + 1, true);
+        }
+      } else if (e.key === 'ArrowUp' || e.key === 'k') {
+        e.preventDefault();
+        if (currentParagraphIndex > 0) {
+          selectParagraph(currentParagraphIndex - 1, true);
+        }
+      }
+    });
+
+    let selectedBlockIds = new Set();
+
+    function renderReviewScreen() {
+      const container = document.getElementById('review-blocks-container');
+      container.innerHTML = '';
+      selectedBlockIds.clear();
+      updateBatchToolbar();
+
+      tempParsedBlocks.forEach((b, idx) => {
+        const blockDiv = document.createElement('div');
+        blockDiv.className = 'p-4 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-black/10 dark:border-zinc-700 space-y-2.5 shadow-sm transition';
+        blockDiv.id = `review-item-${idx}`;
+
+        let versesBadges = '';
+        if (b.verses && b.verses.length > 0) {
+          b.verses.forEach(v => {
+            versesBadges += `<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 text-[11px] font-medium border border-emerald-500/20">📖 ${v}</span>`;
+          });
+        }
+
+        blockDiv.innerHTML = `
+          <div class="flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2.5">
+              <input type="checkbox" onchange="toggleSelectBlock(${idx}, this.checked)" class="rounded accent-[#52453a] w-4 h-4 cursor-pointer">
+              <span class="font-mono text-zinc-400 dark:text-zinc-500 text-[11px]">#${idx + 1}</span>
+              <select onchange="changeBlockType(${idx}, this.value)" class="px-2.5 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium text-xs border border-zinc-200 dark:border-zinc-600 focus:ring-1 focus:ring-[#52453a]">
+                <option value="title" ${b.type === 'title' ? 'selected' : ''}>📌 Título Principal</option>
+                <option value="subtitle" ${b.type === 'subtitle' ? 'selected' : ''}>🏷️ Subtítulo / Série</option>
+                <option value="heading" ${b.type === 'heading' ? 'selected' : ''}>📑 Tópico / Subtítulo</option>
+                <option value="paragraph" ${b.type === 'paragraph' ? 'selected' : ''}>📄 Parágrafo</option>
+                <option value="quote" ${b.type === 'quote' ? 'selected' : ''}>💬 Citação em Bloco</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-1.5">
+              ${versesBadges}
+            </div>
+          </div>
+          <p class="text-xs text-zinc-800 dark:text-zinc-200 font-serif-reading leading-relaxed">${b.text}</p>
+        `;
+
+        container.appendChild(blockDiv);
+      });
+    }
+
+    function toggleSelectBlock(idx, checked) {
+      if (checked) selectedBlockIds.add(idx);
+      else selectedBlockIds.delete(idx);
+      updateBatchToolbar();
+    }
+
+    function toggleSelectAll(checked) {
+      const checkboxes = document.querySelectorAll('#review-blocks-container input[type="checkbox"]');
+      checkboxes.forEach((cb, idx) => {
+        cb.checked = checked;
+        if (checked) selectedBlockIds.add(idx);
+        else selectedBlockIds.delete(idx);
+      });
+      updateBatchToolbar();
+    }
+
+    function updateBatchToolbar() {
+      const count = selectedBlockIds.size;
+      document.getElementById('selected-count-label').innerText = `${count} selecionados`;
+      const btnMerge = document.getElementById('btn-merge-quote');
+      const btnDel = document.getElementById('btn-delete-selected');
+
+      const isEnabled = count > 0;
+      [btnMerge, btnDel].forEach(btn => {
+        if (isEnabled) {
+          btn.classList.remove('opacity-50', 'cursor-not-allowed');
+          btn.disabled = false;
+        } else {
+          btn.classList.add('opacity-50', 'cursor-not-allowed');
+          btn.disabled = true;
+        }
+      });
+    }
+
+    function mergeSelectedBlocks(targetType) {
+      if (selectedBlockIds.size < 2) {
+        alert('Selecione pelo menos 2 blocos para mesclar.');
+        return;
+      }
+      const sortedIndices = Array.from(selectedBlockIds).sort((a,b) => a - b);
+      const firstIdx = sortedIndices[0];
+
+      let mergedText = [];
+      let mergedVerses = [];
+
+      sortedIndices.forEach(idx => {
+        mergedText.push(tempParsedBlocks[idx].text);
+        if (tempParsedBlocks[idx].verses) {
+          mergedVerses.push(...tempParsedBlocks[idx].verses);
+        }
+      });
+
+      tempParsedBlocks[firstIdx] = {
+        type: targetType || 'quote',
+        text: mergedText.join(' '),
+        verses: Array.from(new Set(mergedVerses)),
+        note: ''
+      };
+
+      const toRemove = sortedIndices.slice(1);
+      tempParsedBlocks = tempParsedBlocks.filter((_, idx) => !toRemove.includes(idx));
+      renderReviewScreen();
+    }
+
+    function deleteSelectedBlocks() {
+      if (selectedBlockIds.size === 0) return;
+      tempParsedBlocks = tempParsedBlocks.filter((_, idx) => !selectedBlockIds.has(idx));
+      renderReviewScreen();
+    }
+
+    function changeBlockType(idx, newType) {
+      tempParsedBlocks[idx].type = newType;
+    }
+
+    function confirmAndOpenInReader() {
+      let newTitle = 'Sermão';
+      let newSubtitle = '';
+      let cleanBlocks = [];
+
+      tempParsedBlocks.forEach(b => {
+        if (b.type === 'title') {
+          newTitle = b.text;
+        } else if (b.type === 'subtitle') {
+          newSubtitle = b.text;
+        } else if (b.type === 'heading') {
+          cleanBlocks.push({ type: 'heading', text: b.text });
+        } else if (b.type === 'quote' || b.type === 'paragraph') {
+          b.verses.forEach(v => {
+            if (!bibleData[v]) {
+              bibleData[v] = {
+                title: v,
+                ARA: `Texto de ${v} carregado do banco local.`,
+                NAA: `Texto de ${v} carregado do banco local.`,
+                NVT: `Texto de ${v} carregado do banco local.`,
+                NVI: `Texto de ${v} carregado do banco local.`,
+                ARC: `Texto de ${v} carregado do banco local.`
+              };
+            }
+          });
+
+          cleanBlocks.push({
+            type: b.type,
+            text: b.text,
+            verses: b.verses,
+            note: ''
+          });
+        }
+      });
+
+      currentSermon = {
+        title: newTitle,
+        subtitle: newSubtitle,
+        series: 'Sermão Importado',
+        blocks: cleanBlocks
+      };
+
+      closeImportModal();
+      renderSermon();
+    }
+
+    function openImportModal() {
+      document.getElementById('import-modal').classList.remove('hidden');
+      document.getElementById('step-paste').classList.remove('hidden');
+      document.getElementById('step-review').classList.add('hidden');
+      document.getElementById('modal-step-title').innerText = '1. Importar ou Colar Sermão';
+    }
+
+    function closeImportModal() {
+      document.getElementById('import-modal').classList.add('hidden');
+    }
+
+    function triggerFileInput() {
+      document.getElementById('native-file-input').click();
+    }
+
+    async function handleFileSelected(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const badge = document.getElementById('file-loaded-badge');
+      const badgeName = document.getElementById('file-loaded-name');
+      const textarea = document.getElementById('raw-sermon-input');
+
+      badge.classList.remove('hidden');
+      badgeName.innerText = `Arquivo carregado: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+
+      if (file.name.endsWith('.json')) {
+        const text = await file.text();
+        try {
+          currentSermon = JSON.parse(text);
+          closeImportModal();
+          renderSermon();
+          return;
+        } catch(e) {}
+      }
+
+      if (file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+        textarea.value = await file.text();
+      } else {
+        loadUserSermonSample();
+      }
+    }
+
+    function clearTextarea() {
+      document.getElementById('raw-sermon-input').value = '';
+      document.getElementById('file-loaded-badge').classList.add('hidden');
+    }
+
+    function loadUserSermonSample() {
+      currentSermon = defaultFullSermon;
+      renderSermon();
+      closeImportModal();
+    }
+
+    const bibleRegex = /\b(G[eê]n(?:esis)?|Ex(?:odo|[êe]x)?|Lev(?:[ií]tico)?|N[uú]m(?:eros)?|Deut(?:eron[ôo]mio)?|Dt|Js|Josu[eé]|Ju[ií]zes|Jz|Rute|Rt|1\s*Sm|2\s*Sm|1\s*Rs|2\s*Rs|1\s*Cr|2\s*Cr|Esd|Ne|Et|Ester|J[oó]|Salmos?|Sl|Prov[eé]rbios?|Pv|Ecl(?:esiastes)?|Ct|Cantares|Is(?:a[ií]as)?|Jr|Jeremias|Lm|Lamenta[çc][õo]es|Ez(?:equiel)?|Dn|Daniel|Os(?:[eé]ias)?|Jl|Joel|Am(?:[oó]s)?|Ob|Obadias|Jn|Jonas|Mq|Miqu[eé]ias|Na|Naum|Hc|Habacuque|Sf|Sofonias|Ag|Ageu|Zc|Zacarias|Ml|Malaquias|Mt|Mateus|Mc|Marcos|Lc|Lucas|Jo(?:[aã]o)?|At(?:os)?|Rm|Romanos|1\s*Co(?:r[ií]ntios)?|2\s*Co(?:r[ií]ntios)?|Gl|G[aá]latas|Ef|Ef[eé]sios|Fp|Filipenses|Cl|Colossenses|1\s*Ts|2\s*Ts|1\s*Tm|2\s*Tm|Tt|Tito|Fm|Filemon|Hb|Hebreus|Tg|Tiago|1\s*Pe|2\s*Pe|1\s*Jo|2\s*Jo|3\s*Jo|Jd|Judas|Ap(?:ocalipse)?)\.?\s*(\d+)(?:[:\.](\d+)(?:[-–](\d+))?)?/gi;
+
+    function processAndAnalyzeText() {
+      const text = document.getElementById('raw-sermon-input').value.trim();
+      if (!text) {
+        alert('Cole um texto primeiro.');
+        return;
+      }
+
+      const rawLines = text.split(/\n+/).map(l => l.trim()).filter(l => l.length > 0);
+      tempParsedBlocks = [];
+
+      rawLines.forEach((line, index) => {
+        const matches = line.match(bibleRegex) || [];
+        const verses = Array.from(new Set(matches.map(m => m.trim())));
+
+        if (index === 0 && line.length < 80 && !line.match(/^[0-9I|V|X]+\./)) {
+          tempParsedBlocks.push({ id: index, type: 'title', text: line, verses: verses });
+        } else if (index === 1 && line.length < 60 && !line.includes(':')) {
+          tempParsedBlocks.push({ id: index, type: 'subtitle', text: line, verses: verses });
+        } else if (line.endsWith(':') || line.match(/^[I|V|X]+\./) || line.match(/^[0-9]+\./) || (line.length < 40 && line === line.toUpperCase() && line.length > 3)) {
+          tempParsedBlocks.push({ id: index, type: 'heading', text: line, verses: verses });
+        } else if (line.startsWith('"') || line.startsWith('“')) {
+          tempParsedBlocks.push({ id: index, type: 'quote', text: line, verses: verses });
+        } else {
+          tempParsedBlocks.push({ id: index, type: 'paragraph', text: line, verses: verses, note: '' });
+        }
+      });
+
+      renderReviewScreen();
+      document.getElementById('step-paste').classList.add('hidden');
+      document.getElementById('step-review').classList.remove('hidden');
+      document.getElementById('modal-step-title').innerText = '2. Revisão da Estrutura Identificada';
+    }
+
+    function backToPaste() {
+      document.getElementById('step-review').classList.add('hidden');
+      document.getElementById('step-paste').classList.remove('hidden');
+      document.getElementById('modal-step-title').innerText = '1. Importar ou Colar Sermão';
+    }
+
+    function setFontWeight(weight) {
+      const content = document.getElementById('sermon-content');
+      ['fw-400', 'fw-500', 'fw-700'].forEach(id => {
+        document.getElementById(id).classList.remove('bg-[#52453a]/15', 'border-[#52453a]');
+      });
+      document.getElementById(`fw-${weight}`).classList.add('bg-[#52453a]/15', 'border-[#52453a]');
+      content.style.fontWeight = weight;
+    }
+
+    function toggleFocusMode() {
+      focusModeActive = !focusModeActive;
+      const btn = document.getElementById('focus-toggle-btn');
+      if (focusModeActive) {
+        btn.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Modo Foco</span>';
+        btn.className = 'px-3 py-1.5 rounded-full bg-[#52453a] text-white flex items-center gap-1.5 text-xs font-medium';
+      } else {
+        btn.innerHTML = '<span class="w-2 h-2 rounded-full bg-zinc-400"></span><span class="opacity-80">Modo Foco Off</span>';
+        btn.className = 'px-3 py-1.5 rounded-full bg-black/10 dark:bg-white/10 text-inherit flex items-center gap-1.5 text-xs font-medium';
+      }
+      selectParagraph(currentParagraphIndex, false);
+    }
+
+    function closeMobileSheet() {
+      document.getElementById('mobile-sheet').classList.add('hidden');
+    }
+
+    function setTheme(theme) {
+      const body = document.getElementById('app-body');
+      const html = document.documentElement;
+
+      if (theme === 'light') {
+        body.className = 'bg-[#fbf9f5] text-[#2c2b29] antialiased min-h-screen selection:bg-[#dfd7cc]';
+        html.classList.remove('dark');
+        document.documentElement.style.setProperty('--active-bg', 'rgba(0, 0, 0, 0.04)');
+      } else if (theme === 'sepia') {
+        body.className = 'bg-[#f4ecd8] text-[#3c3426] antialiased min-h-screen selection:bg-[#dfd0b5]';
+        html.classList.remove('dark');
+        document.documentElement.style.setProperty('--active-bg', 'rgba(100, 80, 50, 0.07)');
+      } else if (theme === 'dark') {
+        body.className = 'bg-[#18181b] text-[#f4f4f5] antialiased min-h-screen selection:bg-[#3f3f46]';
+        html.classList.add('dark');
+        document.documentElement.style.setProperty('--active-bg', 'rgba(255, 255, 255, 0.07)');
+      } else if (theme === 'oled') {
+        body.className = 'bg-[#000000] text-[#e4e4e7] antialiased min-h-screen selection:bg-[#27272a]';
+        html.classList.add('dark');
+        document.documentElement.style.setProperty('--active-bg', 'rgba(255, 255, 255, 0.1)');
+      }
+    }
+
+    function toggleTypographyPanel() {
+      document.getElementById('typography-panel').classList.toggle('hidden');
+    }
+
+    function setFontFamily(type) {
+      const content = document.getElementById('sermon-content');
+      if (type === 'serif') {
+        content.classList.remove('font-sans-reading');
+        content.classList.add('font-serif-reading');
+      } else {
+        content.classList.remove('font-serif-reading');
+        content.classList.add('font-sans-reading');
+      }
+    }
+
+    function setFontSize(val) {
+      document.getElementById('font-size-label').innerText = val + 'px';
+      document.getElementById('sermon-content').style.fontSize = val + 'px';
+      setTimeout(alignInspectorWithActiveParagraph, 50);
+    }
+
+    function setLineHeight(val) {
+      document.getElementById('line-height-label').innerText = val + 'x';
+      document.getElementById('sermon-content').style.lineHeight = val;
+      setTimeout(alignInspectorWithActiveParagraph, 50);
+    }
+
+    function copyCurrentVerses() {
+      if (!currentVerseKey || !bibleData[currentVerseKey]) {
+        alert('Nenhum versículo ativo para copiar.');
+        return;
+      }
+      const tr = selectedTranslations[0] || 'ARA';
+      const text = `${currentVerseKey} (${tr}): "${bibleData[currentVerseKey][tr]}"`;
+      navigator.clipboard.writeText(text);
+      alert('Versículo copiado com sucesso!');
+    }
+
+    renderSermon();
+
+    // Registro do Service Worker para suporte PWA e Offline
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
