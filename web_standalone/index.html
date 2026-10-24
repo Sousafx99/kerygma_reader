@@ -412,7 +412,12 @@
                   <span class="text-xs font-bold uppercase tracking-wider text-[#52453a] dark:text-amber-300" id="verse-ref-title">Provérbios 24:27</span>
                   <span class="text-[10px] px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 opacity-75">Texto Bíblico</span>
                 </div>
-                <span class="text-[11px] opacity-50">Offline Local</span>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="openVerseEditorModal()" class="text-[11px] px-2 py-0.5 rounded bg-black/5 dark:bg-white/10 hover:bg-black/10 text-stone-700 dark:text-stone-300 font-medium transition" title="Editar ou colar manualmente o texto deste versículo">
+                    ✎ Editar
+                  </button>
+                  <span class="text-[11px] opacity-50">Local</span>
+                </div>
               </div>
 
               <!-- Seletor de Múltipla Escolha -->
@@ -474,6 +479,32 @@
     </div>
   </main>
 
+  
+  <!-- MODAL DE EDIÇÃO DE VERSÍCULO -->
+  <div id="verse-edit-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-lg bg-[#fbf9f5] dark:bg-[#18181b] text-[#1c1917] dark:text-[#f4f4f5] border border-black/15 dark:border-zinc-700 rounded-3xl p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-black/10 dark:border-zinc-700 mb-4">
+        <div>
+          <h3 class="font-bold text-base tracking-tight" id="verse-edit-modal-title">Editar Texto Bíblico</h3>
+          <p class="text-xs text-zinc-500">Cole ou edite o texto para uso offline imediato.</p>
+        </div>
+        <button onclick="closeVerseEditorModal()" class="w-7 h-7 rounded-full bg-black/5 dark:bg-zinc-800 flex items-center justify-center text-xs opacity-70 hover:opacity-100">✕</button>
+      </div>
+
+      <div class="space-y-3 mb-5">
+        <div>
+          <label class="text-xs font-semibold block mb-1">Texto do Versículo (ARA / Padrão):</label>
+          <textarea id="verse-edit-textarea" rows="4" class="w-full p-3 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-black/15 dark:border-zinc-700 text-xs font-serif-reading leading-relaxed focus:ring-1 focus:ring-[#52453a] resize-none"></textarea>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-black/10 dark:border-zinc-700">
+        <button onclick="closeVerseEditorModal()" class="px-4 py-2 rounded-xl border border-black/15 dark:border-zinc-700 text-xs font-medium text-zinc-700 dark:text-zinc-300">Cancelar</button>
+        <button onclick="saveVerseManualEdit()" class="px-5 py-2 rounded-xl bg-[#52453a] text-white font-medium text-xs hover:bg-[#3f352c] transition">Salvar Versículo</button>
+      </div>
+    </div>
+  </div>
+
   <!-- BOTTOM SHEET MOBILE -->
   <div id="mobile-sheet" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end">
     <div class="w-full bg-[#fbf9f5] dark:bg-zinc-900 border-t border-black/15 dark:border-zinc-700 rounded-t-3xl p-5 shadow-2xl max-h-[80vh] overflow-y-auto">
@@ -490,6 +521,22 @@
   <script>
     // BANCO BÍBLICO LOCAL
     const bibleData = {
+      'Deuteronômio 6:4-9': {
+        title: 'Deuteronômio 6:4-9',
+        ARA: "Ouve, ó Israel; o Senhor nosso Deus é o único Senhor. Amarás, pois, ao Senhor teu Deus de todo o teu coração, de toda a tua alma e de todas as tuas forças. E estas palavras, que hoje te ordeno, estarão no teu coração; e as ensinarás a teus filhos, e delas falarás sentado em tua casa e andando pelo caminho, ao deitar-te e ao levantar-te. Também as atarás por sinal na tua mão e te serão por frontais entre os teus olhos; e as escreverás nos umbrais de tua casa, e nas tuas portas.",
+        NAA: "— Escute, Israel, o SENHOR, nosso Deus, é o único SENHOR. Portanto, ame o SENHOR, seu Deus, de todo o seu coração, de toda a sua alma e com toda a sua força. Estas palavras que hoje lhe ordeno estarão no seu coração. Você as inculcará [3] a seus filhos, e delas falará quando estiver sentado em sua casa, andando pelo caminho, ao deitar-se e ao levantar-se. Também deve amarrá-las como sinal na sua mão, e elas lhe serão por frontal entre os olhos. E você as escreverá nos umbrais de sua casa e nas suas portas.",
+        NVT: "“Ouça, ó Israel! O SENHOR, nosso Deus, o SENHOR é único! Ame o SENHOR, seu Deus, de todo o seu coração, de toda a sua alma e de toda a sua força. Guarde sempre no coração as palavras que hoje eu lhe dou. Repita-as com frequência a seus filhos. Converse a respeito delas quando estiver em casa e quando estiver caminhando, quando se deitar e quando se levantar. Amarre-as às mãos e prenda-as à testa como lembrança. Escreva-as nos batentes das portas de sua casa e em seus portões.",
+        NVI: "Ouve, ó Israel; o Senhor nosso Deus é o único Senhor. Amarás, pois, ao Senhor teu Deus de todo o teu coração, de toda a tua alma e de todas as tuas forças. E estas palavras, que hoje te ordeno, estarão no teu coração; e as ensinarás a teus filhos, e delas falarás sentado em tua casa e andando pelo caminho, ao deitar-te e ao levantar-te. Também as atarás por sinal na tua mão e te serão por frontais entre os teus olhos; e as escreverás nos umbrais de tua casa, e nas tuas portas.",
+        ARC: "Ouve, Israel, o SENHOR, nosso Deus, é o único SENHOR. Amarás, pois, o SENHOR, teu Deus, de todo o teu coração, e de toda a tua alma, e de todo o teu poder. E estas palavras que hoje te ordeno estarão no teu coração; e as intimarás a teus filhos e delas falarás assentado em tua casa, e andando pelo caminho, e deitando-te, e levantando-te. Também as atarás por sinal na tua mão, e te serão por testeiras entre os teus olhos. E as escreverás nos umbrais de tua casa e nas tuas portas."
+      },
+      'Dt 6:4-9': {
+        title: 'Deuteronômio 6:4-9',
+        ARA: "Ouve, ó Israel; o Senhor nosso Deus é o único Senhor. Amarás, pois, ao Senhor teu Deus de todo o teu coração, de toda a tua alma e de todas as tuas forças. E estas palavras, que hoje te ordeno, estarão no teu coração; e as ensinarás a teus filhos, e delas falarás sentado em tua casa e andando pelo caminho, ao deitar-te e ao levantar-te. Também as atarás por sinal na tua mão e te serão por frontais entre os teus olhos; e as escreverás nos umbrais de tua casa, e nas tuas portas.",
+        NAA: "— Escute, Israel, o SENHOR, nosso Deus, é o único SENHOR. Portanto, ame o SENHOR, seu Deus, de todo o seu coração, de toda a sua alma e com toda a sua força. Estas palavras que hoje lhe ordeno estarão no seu coração. Você as inculcará [3] a seus filhos, e delas falará quando estiver sentado em sua casa, andando pelo caminho, ao deitar-se e ao levantar-se. Também deve amarrá-las como sinal na sua mão, e elas lhe serão por frontal entre os olhos. E você as escreverá nos umbrais de sua casa e nas suas portas.",
+        NVT: "“Ouça, ó Israel! O SENHOR, nosso Deus, o SENHOR é único! Ame o SENHOR, seu Deus, de todo o seu coração, de toda a sua alma e de toda a sua força. Guarde sempre no coração as palavras que hoje eu lhe dou. Repita-as com frequência a seus filhos. Converse a respeito delas quando estiver em casa e quando estiver caminhando, quando se deitar e quando se levantar. Amarre-as às mãos e prenda-as à testa como lembrança. Escreva-as nos batentes das portas de sua casa e em seus portões.",
+        NVI: "Ouve, ó Israel; o Senhor nosso Deus é o único Senhor. Amarás, pois, ao Senhor teu Deus de todo o teu coração, de toda a tua alma e de todas as tuas forças. E estas palavras, que hoje te ordeno, estarão no teu coração; e as ensinarás a teus filhos, e delas falarás sentado em tua casa e andando pelo caminho, ao deitar-te e ao levantar-te. Também as atarás por sinal na tua mão e te serão por frontais entre os teus olhos; e as escreverás nos umbrais de tua casa, e nas tuas portas.",
+        ARC: "Ouve, Israel, o SENHOR, nosso Deus, é o único SENHOR. Amarás, pois, o SENHOR, teu Deus, de todo o teu coração, e de toda a tua alma, e de todo o teu poder. E estas palavras que hoje te ordeno estarão no teu coração; e as intimarás a teus filhos e delas falarás assentado em tua casa, e andando pelo caminho, e deitando-te, e levantando-te. Também as atarás por sinal na tua mão, e te serão por testeiras entre os teus olhos. E as escreverás nos umbrais de tua casa e nas tuas portas."
+      },
       'Provérbios 24:27': {
         title: 'Provérbios 24:27',
         ARA: 'Cuida dos teus negócios lá fora, apronta a lavoura no campo e, depois, edifica a tua casa.',
@@ -626,6 +673,15 @@
       ]
     };
 
+    
+    // Restaurar versículos salvos no cache local
+    try {
+      const cachedBible = localStorage.getItem('kerygma_bible_cache');
+      if (cachedBible) {
+        Object.assign(bibleData, JSON.parse(cachedBible));
+      }
+    } catch(e) {}
+
     let currentSermon = defaultFullSermon;
     try {
       const saved = localStorage.getItem('kerygma_saved_sermon');
@@ -643,6 +699,195 @@
     let currentParagraphIndex = 0;
     let focusModeActive = true;
     let currentViewport = 'desktop';
+
+    
+    // Mapeamento canônico dos 66 livros da Bíblia para busca automática
+    const bibleBookCanonical = {
+      'gênesis': 1, 'genesis': 1, 'gn': 1, 'gen': 1,
+      'êxodo': 2, 'exodo': 2, 'ex': 2,
+      'levítico': 3, 'levitico': 3, 'lv': 3, 'lev': 3,
+      'números': 4, 'numeros': 4, 'nm': 4, 'num': 4,
+      'deuteronômio': 5, 'deuteronomio': 5, 'dt': 5, 'deut': 5,
+      'josué': 6, 'josue': 6, 'js': 6,
+      'juízes': 7, 'juizes': 7, 'jz': 7,
+      'rute': 8, 'rt': 8,
+      '1 samuel': 9, '1samuel': 9, '1 sm': 9, '1sm': 9,
+      '2 samuel': 10, '2samuel': 10, '2 sm': 10, '2sm': 10,
+      '1 reis': 11, '1reis': 11, '1 rs': 11, '1rs': 11,
+      '2 reis': 12, '2reis': 12, '2 rs': 12, '2rs': 12,
+      '1 crônicas': 13, '1 cronicas': 13, '1cr': 13, '1 cr': 13,
+      '2 crônicas': 14, '2 cronicas': 14, '2cr': 14, '2 cr': 14,
+      'esdras': 15, 'esd': 15,
+      'neemias': 16, 'ne': 16,
+      'ester': 17, 'et': 17,
+      'jó': 18, 'jo': 18,
+      'salmos': 19, 'salmo': 19, 'sl': 19,
+      'provérbios': 20, 'proverbios': 20, 'pv': 20,
+      'eclesiastes': 21, 'ec': 21, 'ecl': 21,
+      'cânticos': 22, 'canticos': 22, 'ct': 22, 'cantares': 22,
+      'isaías': 23, 'isaias': 23, 'is': 23,
+      'jeremias': 24, 'jr': 24,
+      'lamentações': 25, 'lamentacoes': 25, 'lm': 25,
+      'ezequiel': 26, 'ez': 26,
+      'daniel': 27, 'dn': 27,
+      'oséias': 28, 'oseias': 28, 'os': 28,
+      'joel': 29, 'jl': 29,
+      'amós': 30, 'amos': 30, 'am': 30,
+      'obadias': 31, 'ob': 31,
+      'jonas': 32, 'jn': 32,
+      'miquéias': 33, 'miqueias': 33, 'mq': 33,
+      'naum': 34, 'na': 34,
+      'habacuque': 35, 'hc': 35,
+      'sofonias': 36, 'sf': 36,
+      'ageu': 37, 'ag': 37,
+      'zacarias': 38, 'zc': 38,
+      'malaquias': 39, 'ml': 39,
+      'mateus': 40, 'mt': 40,
+      'marcos': 41, 'mc': 41,
+      'lucas': 42, 'lc': 42,
+      'joão': 43, 'joao': 43, 'jo': 43,
+      'atos': 44, 'at': 44,
+      'romanos': 45, 'rm': 45,
+      '1 coríntios': 46, '1 corintios': 46, '1 co': 46, '1co': 46,
+      '2 coríntios': 47, '2 corintios': 47, '2 co': 47, '2co': 47,
+      'gálatas': 48, 'galatas': 48, 'gl': 48,
+      'efésios': 49, 'efesios': 49, 'ef': 49,
+      'filipenses': 50, 'fp': 50,
+      'colossenses': 51, 'cl': 51,
+      '1 tessalonicenses': 52, '1 ts': 52, '1ts': 52,
+      '2 tessalonicenses': 53, '2 ts': 53, '2ts': 53,
+      '1 timóteo': 54, '1 timoteo': 54, '1 tm': 54, '1tm': 54,
+      '2 timóteo': 55, '2 timoteo': 55, '2 tm': 55, '2tm': 55,
+      'tito': 56, 'tt': 56,
+      'filemom': 57, 'fm': 57,
+      'hebreus': 58, 'hb': 58,
+      'tiago': 59, 'tg': 59,
+      '1 pedro': 60, '1 pe': 60, '1pe': 60,
+      '2 pedro': 61, '2 pe': 61, '2pe': 61,
+      '1 joão': 62, '1 joao': 62, '1 jo': 62, '1jo': 62,
+      '2 joão': 63, '2 joao': 63, '2 jo': 63, '2jo': 63,
+      '3 joão': 64, '3 joao': 64, '3 jo': 64, '3jo': 64,
+      'judas': 65, 'jd': 65,
+      'apocalipse': 66, 'ap': 66
+    };
+
+    function parseBibleReference(ref) {
+      if (!ref) return null;
+      const clean = ref.trim().replace(/^📖\s*/, '');
+      const match = clean.match(/^([0-9]?\s*[A-Za-zÀ-ÿ]+)\.?\s*(\d+)[:\.](\d+)(?:[-–](\d+))?/i);
+      if (!match) return null;
+
+      const rawBook = match[1].toLowerCase().replace(/\s+/g, ' ').trim();
+      const chapter = parseInt(match[2], 10);
+      const vStart = parseInt(match[3], 10);
+      const vEnd = match[4] ? parseInt(match[4], 10) : vStart;
+      const bookId = bibleBookCanonical[rawBook];
+
+      if (!bookId) return null;
+      return { bookId, chapter, vStart, vEnd, cleanRef: clean };
+    }
+
+    const fetchingVersesSet = new Set();
+
+    async function fetchScriptureText(ref) {
+      if (!ref || fetchingVersesSet.has(ref)) return;
+      const parsed = parseBibleReference(ref);
+      if (!parsed) return;
+
+      fetchingVersesSet.add(ref);
+
+      const translationsMap = {
+        'ARA': 'ARA',
+        'NAA': 'NAA',
+        'NVT': 'NVT',
+        'ARC': 'ARC09'
+      };
+
+      const result = {
+        title: ref,
+        ARA: '',
+        NAA: '',
+        NVT: '',
+        NVI: '',
+        ARC: ''
+      };
+
+      try {
+        // Buscar em paralelo nas traduções de Bolls
+        const fetchPromises = Object.entries(translationsMap).map(async ([trKey, bollsCode]) => {
+          try {
+            const url = `https://bolls.life/get-chapter/${bollsCode}/${parsed.bookId}/${parsed.chapter}/`;
+            const resp = await fetch(url);
+            if (!resp.ok) return;
+            const data = await resp.json();
+            if (Array.isArray(data)) {
+              const selected = data
+                .filter(v => v.verse >= parsed.vStart && v.verse <= parsed.vEnd)
+                .map(v => v.text.replace(/<[^>]+>/g, '').replace(/[\u24b6-\u24ea]/g, '').trim());
+              if (selected.length > 0) {
+                result[trKey] = selected.join(' ');
+              }
+            }
+          } catch(e) {}
+        });
+
+        // Buscar NVI / Almeida via bible-api
+        const nviPromise = (async () => {
+          try {
+            const encoded = encodeURIComponent(parsed.cleanRef);
+            const resp = await fetch(`https://bible-api.com/${encoded}?translation=almeida`);
+            if (resp.ok) {
+              const data = await resp.json();
+              if (data && data.text) {
+                result['NVI'] = data.text.replace(/\s+/g, ' ').trim();
+              }
+            }
+          } catch(e) {}
+        })();
+
+        await Promise.all([...fetchPromises, nviPromise]);
+
+        // Preencher eventuais traduções faltantes com a melhor disponível
+        const bestAvailable = result.ARA || result.NAA || result.NVT || result.ARC || result.NVI;
+        if (bestAvailable) {
+          if (!result.ARA) result.ARA = bestAvailable;
+          if (!result.NAA) result.NAA = bestAvailable;
+          if (!result.NVT) result.NVT = bestAvailable;
+          if (!result.NVI) result.NVI = bestAvailable;
+          if (!result.ARC) result.ARC = bestAvailable;
+
+          bibleData[ref] = result;
+          bibleData[parsed.cleanRef] = result;
+
+          // Salvar no cache offline permanente
+          try {
+            let cached = {};
+            const raw = localStorage.getItem('kerygma_bible_cache');
+            if (raw) cached = JSON.parse(raw);
+            cached[ref] = result;
+            cached[parsed.cleanRef] = result;
+            localStorage.setItem('kerygma_bible_cache', JSON.stringify(cached));
+          } catch(e) {}
+
+          // Atualizar tela se for o versículo ativo
+          if (currentVerseKey === ref || currentVerseKey === parsed.cleanRef) {
+            let pCount = 0;
+            let activeBlock = null;
+            for (let b of currentSermon.blocks) {
+              if (b.type === 'paragraph' || b.type === 'quote') {
+                if (pCount === currentParagraphIndex) { activeBlock = b; break; }
+                pCount++;
+              }
+            }
+            updateInspector(activeBlock);
+          }
+        }
+      } catch(err) {
+        console.error('Erro ao buscar versículo:', err);
+      } finally {
+        fetchingVersesSet.delete(ref);
+      }
+    }
 
     const transNames = {
       'ARA': 'Almeida Revista e Atualizada',
@@ -782,14 +1027,21 @@
 
       if (hasVerse) {
         bibleCard.classList.remove('hidden');
-        const verseObj = bibleData[currentVerseKey] || {
-          title: currentVerseKey,
-          ARA: `Texto de ${currentVerseKey} cadastrado para leitura offline.`,
-          NAA: `Texto de ${currentVerseKey} cadastrado para leitura offline.`,
-          NVT: `Texto de ${currentVerseKey} cadastrado para leitura offline.`,
-          NVI: `Texto de ${currentVerseKey} cadastrado para leitura offline.`,
-          ARC: `Texto de ${currentVerseKey} cadastrado para leitura offline.`
-        };
+        let verseObj = bibleData[currentVerseKey];
+
+        // Se versículo não existe ou ainda é texto placeholder, buscar na API oficial
+        const isPlaceholder = !verseObj || (verseObj.ARA && (verseObj.ARA.includes('cadastrado') || verseObj.ARA.includes('carregado do sermão')));
+        if (isPlaceholder) {
+          fetchScriptureText(currentVerseKey);
+          verseObj = verseObj || {
+            title: currentVerseKey,
+            ARA: `Buscando texto de ${currentVerseKey}...`,
+            NAA: `Buscando texto de ${currentVerseKey}...`,
+            NVT: `Buscando texto de ${currentVerseKey}...`,
+            NVI: `Buscando texto de ${currentVerseKey}...`,
+            ARC: `Buscando texto de ${currentVerseKey}...`
+          };
+        }
 
         document.getElementById('verse-ref-title').innerText = verseObj.title || currentVerseKey;
         document.getElementById('trans-summary-label').innerText = `${selectedTranslations.join(', ')} em comparação`;
@@ -993,7 +1245,58 @@
       }
 
       closeParagraphEditorModal();
-      renderSermon();
+      
+    function openVerseEditorModal() {
+      if (!currentVerseKey) return;
+      document.getElementById('verse-edit-modal-title').innerText = `Editar Texto: ${currentVerseKey}`;
+      const vObj = bibleData[currentVerseKey] || {};
+      const currentTr = selectedTranslations[0] || 'ARA';
+      document.getElementById('verse-edit-textarea').value = vObj[currentTr] || vObj['ARA'] || '';
+      document.getElementById('verse-edit-modal').classList.remove('hidden');
+    }
+
+    function closeVerseEditorModal() {
+      document.getElementById('verse-edit-modal').classList.add('hidden');
+    }
+
+    function saveVerseManualEdit() {
+      if (!currentVerseKey) return;
+      const text = document.getElementById('verse-edit-textarea').value.trim();
+      if (!text) return;
+
+      if (!bibleData[currentVerseKey]) {
+        bibleData[currentVerseKey] = { title: currentVerseKey };
+      }
+      // Salvar em todas as traduções selecionadas
+      selectedTranslations.forEach(tr => {
+        bibleData[currentVerseKey][tr] = text;
+      });
+      if (!bibleData[currentVerseKey]['ARA']) {
+        bibleData[currentVerseKey]['ARA'] = text;
+      }
+
+      // Persistir no cache local
+      try {
+        let cached = {};
+        const raw = localStorage.getItem('kerygma_bible_cache');
+        if (raw) cached = JSON.parse(raw);
+        cached[currentVerseKey] = bibleData[currentVerseKey];
+        localStorage.setItem('kerygma_bible_cache', JSON.stringify(cached));
+      } catch(e) {}
+
+      closeVerseEditorModal();
+      let pCount = 0;
+      let activeBlock = null;
+      for (let b of currentSermon.blocks) {
+        if (b.type === 'paragraph' || b.type === 'quote') {
+          if (pCount === currentParagraphIndex) { activeBlock = b; break; }
+          pCount++;
+        }
+      }
+      updateInspector(activeBlock);
+    }
+
+    renderSermon();
       selectParagraph(editingBlockIndex, false);
     }
 
@@ -1012,7 +1315,58 @@
         currentSermon.blocks.splice(removeIdx, 1);
       }
       closeParagraphEditorModal();
-      renderSermon();
+      
+    function openVerseEditorModal() {
+      if (!currentVerseKey) return;
+      document.getElementById('verse-edit-modal-title').innerText = `Editar Texto: ${currentVerseKey}`;
+      const vObj = bibleData[currentVerseKey] || {};
+      const currentTr = selectedTranslations[0] || 'ARA';
+      document.getElementById('verse-edit-textarea').value = vObj[currentTr] || vObj['ARA'] || '';
+      document.getElementById('verse-edit-modal').classList.remove('hidden');
+    }
+
+    function closeVerseEditorModal() {
+      document.getElementById('verse-edit-modal').classList.add('hidden');
+    }
+
+    function saveVerseManualEdit() {
+      if (!currentVerseKey) return;
+      const text = document.getElementById('verse-edit-textarea').value.trim();
+      if (!text) return;
+
+      if (!bibleData[currentVerseKey]) {
+        bibleData[currentVerseKey] = { title: currentVerseKey };
+      }
+      // Salvar em todas as traduções selecionadas
+      selectedTranslations.forEach(tr => {
+        bibleData[currentVerseKey][tr] = text;
+      });
+      if (!bibleData[currentVerseKey]['ARA']) {
+        bibleData[currentVerseKey]['ARA'] = text;
+      }
+
+      // Persistir no cache local
+      try {
+        let cached = {};
+        const raw = localStorage.getItem('kerygma_bible_cache');
+        if (raw) cached = JSON.parse(raw);
+        cached[currentVerseKey] = bibleData[currentVerseKey];
+        localStorage.setItem('kerygma_bible_cache', JSON.stringify(cached));
+      } catch(e) {}
+
+      closeVerseEditorModal();
+      let pCount = 0;
+      let activeBlock = null;
+      for (let b of currentSermon.blocks) {
+        if (b.type === 'paragraph' || b.type === 'quote') {
+          if (pCount === currentParagraphIndex) { activeBlock = b; break; }
+          pCount++;
+        }
+      }
+      updateInspector(activeBlock);
+    }
+
+    renderSermon();
       selectParagraph(Math.max(0, editingBlockIndex - 1), false);
     }
 
@@ -1072,7 +1426,58 @@
 
       currentSermon.blocks = newBlocks;
       closeFullEditorModal();
-      renderSermon();
+      
+    function openVerseEditorModal() {
+      if (!currentVerseKey) return;
+      document.getElementById('verse-edit-modal-title').innerText = `Editar Texto: ${currentVerseKey}`;
+      const vObj = bibleData[currentVerseKey] || {};
+      const currentTr = selectedTranslations[0] || 'ARA';
+      document.getElementById('verse-edit-textarea').value = vObj[currentTr] || vObj['ARA'] || '';
+      document.getElementById('verse-edit-modal').classList.remove('hidden');
+    }
+
+    function closeVerseEditorModal() {
+      document.getElementById('verse-edit-modal').classList.add('hidden');
+    }
+
+    function saveVerseManualEdit() {
+      if (!currentVerseKey) return;
+      const text = document.getElementById('verse-edit-textarea').value.trim();
+      if (!text) return;
+
+      if (!bibleData[currentVerseKey]) {
+        bibleData[currentVerseKey] = { title: currentVerseKey };
+      }
+      // Salvar em todas as traduções selecionadas
+      selectedTranslations.forEach(tr => {
+        bibleData[currentVerseKey][tr] = text;
+      });
+      if (!bibleData[currentVerseKey]['ARA']) {
+        bibleData[currentVerseKey]['ARA'] = text;
+      }
+
+      // Persistir no cache local
+      try {
+        let cached = {};
+        const raw = localStorage.getItem('kerygma_bible_cache');
+        if (raw) cached = JSON.parse(raw);
+        cached[currentVerseKey] = bibleData[currentVerseKey];
+        localStorage.setItem('kerygma_bible_cache', JSON.stringify(cached));
+      } catch(e) {}
+
+      closeVerseEditorModal();
+      let pCount = 0;
+      let activeBlock = null;
+      for (let b of currentSermon.blocks) {
+        if (b.type === 'paragraph' || b.type === 'quote') {
+          if (pCount === currentParagraphIndex) { activeBlock = b; break; }
+          pCount++;
+        }
+      }
+      updateInspector(activeBlock);
+    }
+
+    renderSermon();
     }
 
     window.addEventListener('keydown', (e) => {
@@ -1264,7 +1669,58 @@
       currentParagraphIndex = 0;
       activeVerseKey = null;
       closeImportModal();
-      renderSermon();
+      
+    function openVerseEditorModal() {
+      if (!currentVerseKey) return;
+      document.getElementById('verse-edit-modal-title').innerText = `Editar Texto: ${currentVerseKey}`;
+      const vObj = bibleData[currentVerseKey] || {};
+      const currentTr = selectedTranslations[0] || 'ARA';
+      document.getElementById('verse-edit-textarea').value = vObj[currentTr] || vObj['ARA'] || '';
+      document.getElementById('verse-edit-modal').classList.remove('hidden');
+    }
+
+    function closeVerseEditorModal() {
+      document.getElementById('verse-edit-modal').classList.add('hidden');
+    }
+
+    function saveVerseManualEdit() {
+      if (!currentVerseKey) return;
+      const text = document.getElementById('verse-edit-textarea').value.trim();
+      if (!text) return;
+
+      if (!bibleData[currentVerseKey]) {
+        bibleData[currentVerseKey] = { title: currentVerseKey };
+      }
+      // Salvar em todas as traduções selecionadas
+      selectedTranslations.forEach(tr => {
+        bibleData[currentVerseKey][tr] = text;
+      });
+      if (!bibleData[currentVerseKey]['ARA']) {
+        bibleData[currentVerseKey]['ARA'] = text;
+      }
+
+      // Persistir no cache local
+      try {
+        let cached = {};
+        const raw = localStorage.getItem('kerygma_bible_cache');
+        if (raw) cached = JSON.parse(raw);
+        cached[currentVerseKey] = bibleData[currentVerseKey];
+        localStorage.setItem('kerygma_bible_cache', JSON.stringify(cached));
+      } catch(e) {}
+
+      closeVerseEditorModal();
+      let pCount = 0;
+      let activeBlock = null;
+      for (let b of currentSermon.blocks) {
+        if (b.type === 'paragraph' || b.type === 'quote') {
+          if (pCount === currentParagraphIndex) { activeBlock = b; break; }
+          pCount++;
+        }
+      }
+      updateInspector(activeBlock);
+    }
+
+    renderSermon();
       selectParagraph(0, true);
     }
 
@@ -1334,7 +1790,58 @@
           currentParagraphIndex = 0;
           activeVerseKey = null;
           closeImportModal();
-          renderSermon();
+          
+    function openVerseEditorModal() {
+      if (!currentVerseKey) return;
+      document.getElementById('verse-edit-modal-title').innerText = `Editar Texto: ${currentVerseKey}`;
+      const vObj = bibleData[currentVerseKey] || {};
+      const currentTr = selectedTranslations[0] || 'ARA';
+      document.getElementById('verse-edit-textarea').value = vObj[currentTr] || vObj['ARA'] || '';
+      document.getElementById('verse-edit-modal').classList.remove('hidden');
+    }
+
+    function closeVerseEditorModal() {
+      document.getElementById('verse-edit-modal').classList.add('hidden');
+    }
+
+    function saveVerseManualEdit() {
+      if (!currentVerseKey) return;
+      const text = document.getElementById('verse-edit-textarea').value.trim();
+      if (!text) return;
+
+      if (!bibleData[currentVerseKey]) {
+        bibleData[currentVerseKey] = { title: currentVerseKey };
+      }
+      // Salvar em todas as traduções selecionadas
+      selectedTranslations.forEach(tr => {
+        bibleData[currentVerseKey][tr] = text;
+      });
+      if (!bibleData[currentVerseKey]['ARA']) {
+        bibleData[currentVerseKey]['ARA'] = text;
+      }
+
+      // Persistir no cache local
+      try {
+        let cached = {};
+        const raw = localStorage.getItem('kerygma_bible_cache');
+        if (raw) cached = JSON.parse(raw);
+        cached[currentVerseKey] = bibleData[currentVerseKey];
+        localStorage.setItem('kerygma_bible_cache', JSON.stringify(cached));
+      } catch(e) {}
+
+      closeVerseEditorModal();
+      let pCount = 0;
+      let activeBlock = null;
+      for (let b of currentSermon.blocks) {
+        if (b.type === 'paragraph' || b.type === 'quote') {
+          if (pCount === currentParagraphIndex) { activeBlock = b; break; }
+          pCount++;
+        }
+      }
+      updateInspector(activeBlock);
+    }
+
+    renderSermon();
           selectParagraph(0, true);
           return;
         } catch(e) {
@@ -1378,7 +1885,58 @@
       persistSermon();
       currentParagraphIndex = 0;
       activeVerseKey = null;
-      renderSermon();
+      
+    function openVerseEditorModal() {
+      if (!currentVerseKey) return;
+      document.getElementById('verse-edit-modal-title').innerText = `Editar Texto: ${currentVerseKey}`;
+      const vObj = bibleData[currentVerseKey] || {};
+      const currentTr = selectedTranslations[0] || 'ARA';
+      document.getElementById('verse-edit-textarea').value = vObj[currentTr] || vObj['ARA'] || '';
+      document.getElementById('verse-edit-modal').classList.remove('hidden');
+    }
+
+    function closeVerseEditorModal() {
+      document.getElementById('verse-edit-modal').classList.add('hidden');
+    }
+
+    function saveVerseManualEdit() {
+      if (!currentVerseKey) return;
+      const text = document.getElementById('verse-edit-textarea').value.trim();
+      if (!text) return;
+
+      if (!bibleData[currentVerseKey]) {
+        bibleData[currentVerseKey] = { title: currentVerseKey };
+      }
+      // Salvar em todas as traduções selecionadas
+      selectedTranslations.forEach(tr => {
+        bibleData[currentVerseKey][tr] = text;
+      });
+      if (!bibleData[currentVerseKey]['ARA']) {
+        bibleData[currentVerseKey]['ARA'] = text;
+      }
+
+      // Persistir no cache local
+      try {
+        let cached = {};
+        const raw = localStorage.getItem('kerygma_bible_cache');
+        if (raw) cached = JSON.parse(raw);
+        cached[currentVerseKey] = bibleData[currentVerseKey];
+        localStorage.setItem('kerygma_bible_cache', JSON.stringify(cached));
+      } catch(e) {}
+
+      closeVerseEditorModal();
+      let pCount = 0;
+      let activeBlock = null;
+      for (let b of currentSermon.blocks) {
+        if (b.type === 'paragraph' || b.type === 'quote') {
+          if (pCount === currentParagraphIndex) { activeBlock = b; break; }
+          pCount++;
+        }
+      }
+      updateInspector(activeBlock);
+    }
+
+    renderSermon();
       selectParagraph(0, true);
       closeImportModal();
     }
@@ -1505,6 +2063,57 @@
 
     const savedTheme = localStorage.getItem('kerygma_theme') || 'light';
     setTheme(savedTheme);
+
+    
+    function openVerseEditorModal() {
+      if (!currentVerseKey) return;
+      document.getElementById('verse-edit-modal-title').innerText = `Editar Texto: ${currentVerseKey}`;
+      const vObj = bibleData[currentVerseKey] || {};
+      const currentTr = selectedTranslations[0] || 'ARA';
+      document.getElementById('verse-edit-textarea').value = vObj[currentTr] || vObj['ARA'] || '';
+      document.getElementById('verse-edit-modal').classList.remove('hidden');
+    }
+
+    function closeVerseEditorModal() {
+      document.getElementById('verse-edit-modal').classList.add('hidden');
+    }
+
+    function saveVerseManualEdit() {
+      if (!currentVerseKey) return;
+      const text = document.getElementById('verse-edit-textarea').value.trim();
+      if (!text) return;
+
+      if (!bibleData[currentVerseKey]) {
+        bibleData[currentVerseKey] = { title: currentVerseKey };
+      }
+      // Salvar em todas as traduções selecionadas
+      selectedTranslations.forEach(tr => {
+        bibleData[currentVerseKey][tr] = text;
+      });
+      if (!bibleData[currentVerseKey]['ARA']) {
+        bibleData[currentVerseKey]['ARA'] = text;
+      }
+
+      // Persistir no cache local
+      try {
+        let cached = {};
+        const raw = localStorage.getItem('kerygma_bible_cache');
+        if (raw) cached = JSON.parse(raw);
+        cached[currentVerseKey] = bibleData[currentVerseKey];
+        localStorage.setItem('kerygma_bible_cache', JSON.stringify(cached));
+      } catch(e) {}
+
+      closeVerseEditorModal();
+      let pCount = 0;
+      let activeBlock = null;
+      for (let b of currentSermon.blocks) {
+        if (b.type === 'paragraph' || b.type === 'quote') {
+          if (pCount === currentParagraphIndex) { activeBlock = b; break; }
+          pCount++;
+        }
+      }
+      updateInspector(activeBlock);
+    }
 
     renderSermon();
 
